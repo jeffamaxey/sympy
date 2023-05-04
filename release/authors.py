@@ -24,10 +24,7 @@ for the first time for this release.
 Thanks to everyone who contributed to this release!
 """
 
-    authors_lines = []
-    for name in authors:
-        authors_lines.append("- " + name)
-
+    authors_lines = [f"- {name}" for name in authors]
     authors_text += '\n'.join(authors_lines)
 
     # Output to file and to screen
@@ -78,9 +75,16 @@ def get_authors(version, prevversion):
     # previous version to be provided explicitly by the caller.
     #
     #old_release_tag = get_previous_version_tag(version)
-    old_release_tag = 'sympy-' + prevversion
 
-    out = check_output(['git', '--no-pager', 'log', old_release_tag + '..', '--format=%aN'])
+    # The get_previous_version function can be flakey so we require the
+    # previous version to be provided explicitly by the caller.
+    #
+    #old_release_tag = get_previous_version_tag(version)
+    old_release_tag = f'sympy-{prevversion}'
+
+    out = check_output(
+        ['git', '--no-pager', 'log', f'{old_release_tag}..', '--format=%aN']
+    )
     releaseauthors = set(out.decode('utf-8').strip().split('\n'))
     out = check_output(['git', '--no-pager', 'log', old_release_tag, '--format=%aN'])
     priorauthors = set(out.decode('utf-8').strip().split('\n'))
@@ -88,7 +92,7 @@ def get_authors(version, prevversion):
     releaseauthors = {name.strip() for name in releaseauthors if name.strip()}
     priorauthors = {name.strip() for name in priorauthors if name.strip()}
     newauthors = releaseauthors - priorauthors
-    starred_newauthors = {name + "*" for name in newauthors}
+    starred_newauthors = {f"{name}*" for name in newauthors}
     authors = releaseauthors - newauthors | starred_newauthors
     return (sorted(authors, key=lastnamekey), len(releaseauthors), len(newauthors))
 
@@ -124,7 +128,7 @@ def get_previous_version_tag(version):
             # If the tagged commit *is* a merge commit, just comment this
             # out, and manually make sure `get_previous_version_tag` is correct
             # assert len(parents) == 2, curtag
-            curcommit = curtag + "^" # The parent of the tagged commit
+            curcommit = f"{curtag}^"
         else:
             print(blue("Using {tag} as the tag for the previous "
                 "release.".format(tag=curtag)))

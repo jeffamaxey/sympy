@@ -144,7 +144,7 @@ def _af_parity(pi):
             c += 1
             a[j] = 1
             i = j
-            while pi[i] != j:
+            while pi[i] != i:
                 i = pi[i]
                 a[i] = 1
     return (n - c) % 2
@@ -237,7 +237,7 @@ def _af_commutes_with(a, b):
 
     Permutation, commutes_with
     """
-    return not any(a[b[i]] != b[a[i]] for i in range(len(a) - 1))
+    return all(a[b[i]] == b[a[i]] for i in range(len(a) - 1))
 
 
 class Cycle(dict):
@@ -402,9 +402,9 @@ class Cycle(dict):
         cycles = Permutation(self).cyclic_form
         s = ''.join(str(tuple(c)) for c in cycles)
         big = self.size - 1
-        if not any(i == big for c in cycles for i in c):
-            s += '(%s)' % big
-        return 'Cycle%s' % s
+        if all(i != big for c in cycles for i in c):
+            s += f'({big})'
+        return f'Cycle{s}'
 
     def __str__(self):
         """We want it to be printed in a Cycle notation with no
@@ -424,8 +424,8 @@ class Cycle(dict):
         cycles = Permutation(self).cyclic_form
         s = ''.join(str(tuple(c)) for c in cycles)
         big = self.size - 1
-        if not any(i == big for c in cycles for i in c):
-            s += '(%s)' % big
+        if all(i != big for c in cycles for i in c):
+            s += f'({big})'
         s = s.replace(',', '')
         return s
 
@@ -461,9 +461,7 @@ class Cycle(dict):
 
     @property
     def size(self):
-        if not self:
-            return 0
-        return max(self.keys()) + 1
+        return max(self.keys()) + 1 if self else 0
 
     def copy(self):
         return Cycle(self)
@@ -963,14 +961,12 @@ class Permutation(Atom):
         if len(args) == 1:
             a = args[0]
             if isinstance(a, cls):  # g
-                if size is None or size == a.size:
-                    return a
-                return cls(a.array_form, size=size)
+                return a if size is None or size == a.size else cls(a.array_form, size=size)
             if isinstance(a, Cycle):  # f
                 return cls._af_new(a.list(size))
             if not is_sequence(a):  # b
                 if size is not None and a + 1 > size:
-                    raise ValueError('size is too small when max is %s' % a)
+                    raise ValueError(f'size is too small when max is {a}')
                 return cls._af_new(list(range(a + 1)))
             if has_variety(is_sequence(ai) for ai in a):
                 ok = False
@@ -1002,10 +998,9 @@ class Permutation(Atom):
 
         if not is_cycle:
             if temp != set(range(len(temp))):
-                raise ValueError('Integers 0 through %s must be present.' %
-                max(temp))
+                raise ValueError(f'Integers 0 through {max(temp)} must be present.')
             if size is not None and temp and max(temp) + 1 > size:
-                raise ValueError('max element should not exceed %s' % (size - 1))
+                raise ValueError(f'max element should not exceed {size - 1}')
 
         if is_cycle:
             # it's not necessarily canonical so we won't store
@@ -1143,8 +1138,7 @@ class Permutation(Atom):
         cyclic_form = []
         for i in range(len(array_form)):
             if unchecked[i]:
-                cycle = []
-                cycle.append(i)
+                cycle = [i]
                 unchecked[i] = False
                 j = i
                 while unchecked[array_form[j]]:
@@ -1297,8 +1291,7 @@ class Permutation(Atom):
         which have _array_form
         """
         a = [x._array_form for x in args]
-        rv = cls._af_new(_af_rmuln(*a))
-        return rv
+        return cls._af_new(_af_rmuln(*a))
 
     def mul_inv(self, other):
         """
@@ -1369,13 +1362,11 @@ class Permutation(Atom):
         if isinstance(other, PermutationGroup):
             return Coset(self, other, dir='-')
         a = self.array_form
-        # __rmul__ makes sure the other is a Permutation
-        b = other.array_form
-        if not b:
-            perm = a
-        else:
+        if b := other.array_form:
             b.extend(list(range(len(b), len(a))))
             perm = [b[i] for i in a] + b[len(a):]
+        else:
+            perm = a
         return self._af_new(perm)
 
     def commutes_with(self, other):
@@ -1434,8 +1425,7 @@ class Permutation(Atom):
         if int(i) == i:
             return self(i)
         else:
-            raise NotImplementedError(
-                "i^p = p(i) when i is an integer, not %s." % i)
+            raise NotImplementedError(f"i^p = p(i) when i is an integer, not {i}.")
 
     def __xor__(self, h):
         """Return the conjugate permutation ``~h*self*h` `.
@@ -1554,12 +1544,11 @@ class Permutation(Atom):
                 res.append(tuple(x))
             elif nx > 2:
                 first = x[0]
-                for y in x[nx - 1:0:-1]:
-                    res.append((first, y))
+                res.extend((first, y) for y in x[nx - 1:0:-1])
         return res
 
     @classmethod
-    def from_sequence(self, i, key=None):
+    def from_sequence(cls, i, key=None):
         """Return the permutation needed to obtain ``i`` from the sorted
         elements of ``i``. If custom sorting is desired, a key can be given.
 
@@ -1643,22 +1632,19 @@ class Permutation(Atom):
         # list indices can be Integer or int; leave this
         # as it is (don't test or convert it) because this
         # gets called a lot and should be fast
-        if len(i) == 1:
-            i = i[0]
-            if not isinstance(i, Iterable):
-                i = as_int(i)
-                if i < 0 or i > self.size:
-                    raise TypeError(
-                        "{} should be an integer between 0 and {}"
-                        .format(i, self.size-1))
-                return self._array_form[i]
+        if len(i) != 1:
+            # P(1, 2, 3)
+            return self*Permutation(Cycle(*i), size=self.size)
+        i = i[0]
+        if not isinstance(i, Iterable):
+            i = as_int(i)
+            if i < 0 or i > self.size:
+                raise TypeError(f"{i} should be an integer between 0 and {self.size - 1}")
+            return self._array_form[i]
             # P([a, b, c])
-            if len(i) != self.size:
-                raise TypeError(
-                    "{} should have the length {}.".format(i, self.size))
-            return [i[j] for j in self._array_form]
-        # P(1, 2, 3)
-        return self*Permutation(Cycle(*i), size=self.size)
+        if len(i) != self.size:
+            raise TypeError(f"{i} should have the length {self.size}.")
+        return [i[j] for j in self._array_form]
 
     def atoms(self):
         """
@@ -1713,12 +1699,11 @@ class Permutation(Atom):
         """
         i = _sympify(i)
         if i.is_integer is False:
-            raise NotImplementedError("{} should be an integer.".format(i))
+            raise NotImplementedError(f"{i} should be an integer.")
 
         n = self.size
-        if (i < 0) == True or (i >= n) == True:
-            raise NotImplementedError(
-                "{} should be an integer between 0 and {}".format(i, n-1))
+        if i < 0 or i >= n:
+            raise NotImplementedError(f"{i} should be an integer between 0 and {n - 1}")
 
         if i.is_Integer:
             return Integer(self._array_form[i])
@@ -1754,17 +1739,16 @@ class Permutation(Atom):
             i -= 1
         if i == -1:
             return None
-        else:
-            j = n - 1
-            while perm[j] < perm[i]:
-                j -= 1
+        j = n - 1
+        while perm[j] < perm[i]:
+            j -= 1
+        perm[j], perm[i] = perm[i], perm[j]
+        i += 1
+        j = n - 1
+        while i < j:
             perm[j], perm[i] = perm[i], perm[j]
             i += 1
-            j = n - 1
-            while i < j:
-                perm[j], perm[i] = perm[i], perm[j]
-                i += 1
-                j -= 1
+            j -= 1
         return self._af_new(perm)
 
     @classmethod
@@ -2095,8 +2079,7 @@ class Permutation(Atom):
         descents, inversions, min, max
         """
         a = self.array_form
-        pos = [i for i in range(len(a) - 1) if a[i] < a[i + 1]]
-        return pos
+        return [i for i in range(len(a) - 1) if a[i] < a[i + 1]]
 
     def descents(self):
         """
@@ -2117,8 +2100,7 @@ class Permutation(Atom):
         ascents, inversions, min, max
         """
         a = self.array_form
-        pos = [i for i in range(len(a) - 1) if a[i] > a[i + 1]]
-        return pos
+        return [i for i in range(len(a) - 1) if a[i] > a[i + 1]]
 
     def max(self):
         """
@@ -2224,8 +2206,8 @@ class Permutation(Atom):
                     if right >= n:
                         right = n - 1
                     inversions += _merge(arr, temp, i, i + k, right)
-                    i = i + k * 2
-                k = k * 2
+                    i += k * 2
+                k *= 2
         return inversions
 
     def commutator(self, x):
@@ -2304,9 +2286,7 @@ class Permutation(Atom):
 
         inversions
         """
-        if self.is_even:
-            return 1
-        return -1
+        return 1 if self.is_even else -1
 
     def order(self):
         """
@@ -2423,7 +2403,7 @@ class Permutation(Atom):
         """
         a = self.array_form
 
-        return sum([j for j in range(len(a) - 1) if a[j] > a[j + 1]])
+        return sum(j for j in range(len(a) - 1) if a[j] > a[j + 1])
 
     def runs(self):
         """
@@ -2490,10 +2470,11 @@ class Permutation(Atom):
         inversion_vector = [0] * (n - 1)
 
         for i in range(n - 1):
-            val = 0
-            for j in range(i + 1, n):
-                if self_array_form[j] < self_array_form[i]:
-                    val += 1
+            val = sum(
+                1
+                for j in range(i + 1, n)
+                if self_array_form[j] < self_array_form[i]
+            )
             inversion_vector[i] = val
         return inversion_vector
 
@@ -2533,10 +2514,7 @@ class Permutation(Atom):
                     k += 1
                 i += 1
             j1 = j + 1
-            if rank % 2 == 0:
-                rank = j1*rank + j1 - k
-            else:
-                rank = j1*rank + k - 1
+            rank = j1*rank + j1 - k if rank % 2 == 0 else j1*rank + k - 1
         return rank
 
     @classmethod
@@ -2621,16 +2599,13 @@ class Permutation(Atom):
                 else:
                     pi[st + d], pi[st + d + 1] = pi[st + d + 1], pi[st + d]
                     done = True
+            elif d == 0:
+                m -= 1
+                st += 1
             else:
-                if d == 0:
-                    m -= 1
-                    st += 1
-                else:
-                    pi[st + d], pi[st + d - 1] = pi[st + d - 1], pi[st + d]
-                    done = True
-        if m == 0:
-            return None
-        return self._af_new(pi)
+                pi[st + d], pi[st + d - 1] = pi[st + d - 1], pi[st + d]
+                done = True
+        return None if m == 0 else self._af_new(pi)
 
     def get_precedence_matrix(self):
         """
@@ -2705,8 +2680,7 @@ class Permutation(Atom):
                     continue
                 if self_prec_mat[i, j] * other_prec_mat[i, j] == 1:
                     n_prec += 1
-        d = self.size * (self.size - 1)//2 - n_prec
-        return d
+        return self.size * (self.size - 1)//2 - n_prec
 
     def get_adjacency_matrix(self):
         """
@@ -2794,8 +2768,7 @@ class Permutation(Atom):
                     continue
                 if self_adj_mat[i, j] * other_adj_mat[i, j] == 1:
                     n_adj += 1
-        d = self.size - n_adj - 1
-        return d
+        return self.size - n_adj - 1
 
     def get_positional_distance(self, other):
         """
@@ -2822,7 +2795,7 @@ class Permutation(Atom):
         b = other.array_form
         if len(a) != len(b):
             raise ValueError("The permutations must be of the same size.")
-        return sum([abs(a[i] - b[i]) for i in range(len(a))])
+        return sum(abs(a[i] - b[i]) for i in range(len(a)))
 
     @classmethod
     def josephus(cls, m, n, s=1):
@@ -2867,7 +2840,7 @@ class Permutation(Atom):
         Q = deque(list(range(n)))
         perm = []
         while len(Q) > max(s, 1):
-            for dp in range(m):
+            for _ in range(m):
                 Q.append(Q.popleft())
             perm.append(Q.popleft())
         perm.extend(list(Q))
@@ -3013,9 +2986,8 @@ class Permutation(Atom):
                 if cycle_min <= n-1:
                     if cycle_max > n-1:
                         raise ValueError(
-                            "The permutation cannot be resized to {} "
-                            "because the cycle {} may break."
-                            .format(n, tuple(cycle)))
+                            f"The permutation cannot be resized to {n} because the cycle {tuple(cycle)} may break."
+                        )
 
                     new_cyclic_form.append(cycle)
             return Permutation(new_cyclic_form)
@@ -3039,13 +3011,12 @@ def _merge(arr, temp, left, mid, right):
     while i < mid and j <= right:
         if arr[i] < arr[j]:
             temp[k] = arr[i]
-            k += 1
             i += 1
         else:
             temp[k] = arr[j]
-            k += 1
             j += 1
             inv_count += (mid -i)
+        k += 1
     while i < mid:
         temp[k] = arr[i]
         k += 1
@@ -3094,19 +3065,14 @@ class AppliedPermutation(Expr):
         x = _sympify(x)
 
         if not isinstance(perm, Permutation):
-            raise ValueError("{} must be a Permutation instance."
-                .format(perm))
+            raise ValueError(f"{perm} must be a Permutation instance.")
 
-        if evaluate:
-            if x.is_Integer:
-                return perm.apply(x)
+        if evaluate and x.is_Integer:
+            return perm.apply(x)
 
-        obj = super().__new__(cls, perm, x)
-        return obj
+        return super().__new__(cls, perm, x)
 
 
 @dispatch(Permutation, Permutation)
 def _eval_is_eq(lhs, rhs):
-    if lhs._size != rhs._size:
-        return None
-    return lhs._array_form == rhs._array_form
+    return None if lhs._size != rhs._size else lhs._array_form == rhs._array_form

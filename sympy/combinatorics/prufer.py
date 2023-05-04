@@ -168,7 +168,7 @@ class Prufer(Basic):
             # edge involving it.
             d[edge[0]] += 1
             d[edge[1]] += 1
-        for i in range(n - 2):
+        for _ in range(n - 2):
             # find the smallest leaf
             for x in range(n):
                 if d[x] == 1:
@@ -277,13 +277,12 @@ class Prufer(Basic):
             nmin = min(ei[0], nmin) if nmin is not None else ei[0]
             nmax = max(ei[1], nmax) if nmax is not None else ei[1]
             rv.append(list(ei))
-        missing = set(range(nmin, nmax + 1)) - got
-        if missing:
+        if missing := set(range(nmin, nmax + 1)) - got:
             missing = [i + nmin for i in missing]
             if len(missing) == 1:
-                msg = 'Node %s is missing.' % missing.pop()
+                msg = f'Node {missing.pop()} is missing.'
             else:
-                msg = 'Nodes %s are missing.' % list(sorted(missing))
+                msg = f'Nodes {list(sorted(missing))} are missing.'
             raise ValueError(msg)
         if nmin != 0:
             for i, ei in enumerate(rv):
@@ -316,7 +315,7 @@ class Prufer(Basic):
         return r
 
     @classmethod
-    def unrank(self, rank, n):
+    def unrank(cls, rank, n):
         """Finds the unranked Prufer sequence.
 
         Examples
@@ -378,9 +377,9 @@ class Prufer(Basic):
                 if nnodes != len(nodes):
                     missing = set(range(nnodes)) - nodes
                     if len(missing) == 1:
-                        msg = 'Node %s is missing.' % missing.pop()
+                        msg = f'Node {missing.pop()} is missing.'
                     else:
-                        msg = 'Nodes %s are missing.' % list(sorted(missing))
+                        msg = f'Nodes {list(sorted(missing))} are missing.'
                     raise ValueError(msg)
             ret_obj._tree_repr = [list(i) for i in args[0]]
             ret_obj._nodes = nnodes

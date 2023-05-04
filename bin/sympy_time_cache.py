@@ -11,7 +11,7 @@ class TreeNode(object):
         self._time = 0
 
     def __str__(self):
-        return "%s: %s" % (self._name, self._time)
+        return f"{self._name}: {self._time}"
 
     __repr__ = __str__
 
@@ -54,7 +54,7 @@ class TreeNode(object):
     def print_generic(self, n=50, method="time"):
         slowest = sorted((getattr(node, method)(), node.name()) for node in self.linearize())[-n:]
         for time, name in slowest[::-1]:
-            print("%s %s" % (time, name))
+            print(f"{time} {name}")
 
     def print_slowest(self, n=50):
         self.print_generic(n=50, method="time")
@@ -74,13 +74,10 @@ class TreeNode(object):
         f.write("fn=%s\n" % self.name())
         f.write("1 %s\n" % self.exclusive_time())
 
-        counter = 2
-        for child in self.children():
+        for counter, child in enumerate(self.children(), start=2):
             f.write("cfn=%s\n" % child.name())
             f.write("calls=1 1\n")
             f.write("%s %s\n" % (counter, child.time()))
-            counter += 1
-
         f.write("\n\n")
 
         for child in self.children():

@@ -29,6 +29,7 @@ Or, if all else fails, feel free to write to the sympy list at
 sympy@googlegroups.com and ask for help.
 """
 
+
 import sys
 import os
 import shutil
@@ -65,8 +66,9 @@ except ImportError:
         if version_tuple(mpmath.__version__) < version_tuple(min_mpmath_version):
             raise ImportError
     except ImportError:
-        print("Please install the mpmath package with a version >= %s"
-              % min_mpmath_version)
+        print(
+            f"Please install the mpmath package with a version >= {min_mpmath_version}"
+        )
         sys.exit(-1)
 
 if sys.version_info < (3, 8):
@@ -325,11 +327,11 @@ class sdist_sympy(sdist):
         commit_hash_filepath = 'doc/commit_hash.txt'
         try:
             commit_hash = \
-                subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+                    subprocess.check_output(['git', 'rev-parse', 'HEAD'])
             commit_hash = commit_hash.decode('ascii')
             commit_hash = commit_hash.rstrip()
-            print('Commit hash found : {}.'.format(commit_hash))
-            print('Writing it to {}.'.format(commit_hash_filepath))
+            print(f'Commit hash found : {commit_hash}.')
+            print(f'Writing it to {commit_hash_filepath}.')
         except:
             pass
 
@@ -341,11 +343,9 @@ class sdist_sympy(sdist):
 
         try:
             os.remove(commit_hash_filepath)
-            print(
-                'Successfully removed temporary file {}.'
-                .format(commit_hash_filepath))
+            print(f'Successfully removed temporary file {commit_hash_filepath}.')
         except OSError as e:
-            print("Error deleting %s - %s." % (e.filename, e.strerror))
+            print(f"Error deleting {e.filename} - {e.strerror}.")
 
 
 # Check that this list is uptodate against the result of the command:
@@ -427,44 +427,48 @@ with open(os.path.join(dir_setup, 'sympy', 'release.py')) as f:
 
 
 if __name__ == '__main__':
-    setup(name='sympy',
-          version=__version__,
-          description='Computer algebra system (CAS) in Python',
-          author='SymPy development team',
-          author_email='sympy@googlegroups.com',
-          license='BSD',
-          keywords="Math CAS",
-          url='https://sympy.org',
-          project_urls={
-              'Source': 'https://github.com/sympy/sympy',
-          },
-          py_modules=['isympy'],
-          packages=['sympy'] + modules + tests,
-          ext_modules=[],
-          package_data={
-              'sympy.utilities.mathml': ['data/*.xsl'],
-              'sympy.logic.benchmarks': ['input/*.cnf'],
-              'sympy.parsing.autolev': [
-                  '*.g4', 'test-examples/*.al', 'test-examples/*.py',
-                  'test-examples/pydy-example-repo/*.al',
-                  'test-examples/pydy-example-repo/*.py',
-                  'test-examples/README.txt',
-                  ],
-              'sympy.parsing.latex': ['*.txt', '*.g4'],
-              'sympy.integrals.rubi.parsetools': ['header.py.txt'],
-              'sympy.plotting.tests': ['test_region_*.png'],
-              'sympy': ['py.typed']
-              },
-          data_files=[('share/man/man1', ['doc/man/isympy.1'])],
-          cmdclass={'test': test_sympy,
-                    'bench': run_benchmarks,
-                    'clean': clean,
-                    'audit': audit,
-                    'antlr': antlr,
-                    'sdist': sdist_sympy,
-                    },
-          python_requires='>=3.8',
-          classifiers=[
+    setup(
+        name='sympy',
+        version=__version__,
+        description='Computer algebra system (CAS) in Python',
+        author='SymPy development team',
+        author_email='sympy@googlegroups.com',
+        license='BSD',
+        keywords="Math CAS",
+        url='https://sympy.org',
+        project_urls={
+            'Source': 'https://github.com/sympy/sympy',
+        },
+        py_modules=['isympy'],
+        packages=['sympy'] + modules + tests,
+        ext_modules=[],
+        package_data={
+            'sympy.utilities.mathml': ['data/*.xsl'],
+            'sympy.logic.benchmarks': ['input/*.cnf'],
+            'sympy.parsing.autolev': [
+                '*.g4',
+                'test-examples/*.al',
+                'test-examples/*.py',
+                'test-examples/pydy-example-repo/*.al',
+                'test-examples/pydy-example-repo/*.py',
+                'test-examples/README.txt',
+            ],
+            'sympy.parsing.latex': ['*.txt', '*.g4'],
+            'sympy.integrals.rubi.parsetools': ['header.py.txt'],
+            'sympy.plotting.tests': ['test_region_*.png'],
+            'sympy': ['py.typed'],
+        },
+        data_files=[('share/man/man1', ['doc/man/isympy.1'])],
+        cmdclass={
+            'test': test_sympy,
+            'bench': run_benchmarks,
+            'clean': clean,
+            'audit': audit,
+            'antlr': antlr,
+            'sdist': sdist_sympy,
+        },
+        python_requires='>=3.8',
+        classifiers=[
             'License :: OSI Approved :: BSD License',
             'Operating System :: OS Independent',
             'Programming Language :: Python',
@@ -478,9 +482,7 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3 :: Only',
             'Programming Language :: Python :: Implementation :: CPython',
             'Programming Language :: Python :: Implementation :: PyPy',
-            ],
-          install_requires=[
-            'mpmath>=%s' % min_mpmath_version,
-            ],
-          **extra_kwargs
-          )
+        ],
+        install_requires=[f'mpmath>={min_mpmath_version}'],
+        **extra_kwargs,
+    )

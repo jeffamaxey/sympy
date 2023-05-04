@@ -86,9 +86,7 @@ def _(expr, assumptions):
             result = False
         if ask(Q.negative(arg), assumptions):
             result = not result
-        elif ask(Q.positive(arg), assumptions):
-            pass
-        else:
+        elif not ask(Q.positive(arg), assumptions):
             return
     return result
 
@@ -108,9 +106,10 @@ def _(expr, assumptions):
     if expr.is_number:
         return _NegativePredicate_number(expr, assumptions)
     if ask(Q.real(expr.base), assumptions):
-        if ask(Q.positive(expr.base), assumptions):
-            if ask(Q.real(expr.exp), assumptions):
-                return False
+        if ask(Q.positive(expr.base), assumptions) and ask(
+            Q.real(expr.exp), assumptions
+        ):
+            return False
         if ask(Q.even(expr.exp), assumptions):
             return False
         if ask(Q.odd(expr.exp), assumptions):
@@ -132,8 +131,9 @@ def _(expr, assumptions):
 @NonNegativePredicate.register(Basic)
 def _(expr, assumptions):
     if expr.is_number:
-        notnegative = fuzzy_not(_NegativePredicate_number(expr, assumptions))
-        if notnegative:
+        if notnegative := fuzzy_not(
+            _NegativePredicate_number(expr, assumptions)
+        ):
             return ask(Q.real(expr), assumptions)
         else:
             return notnegative
@@ -227,8 +227,9 @@ def _(expr, assumptions):
 @NonPositivePredicate.register(Basic)
 def _(expr, assumptions):
     if expr.is_number:
-        notpositive = fuzzy_not(_PositivePredicate_number(expr, assumptions))
-        if notpositive:
+        if notpositive := fuzzy_not(
+            _PositivePredicate_number(expr, assumptions)
+        ):
             return ask(Q.real(expr), assumptions)
         else:
             return notpositive
@@ -312,9 +313,10 @@ def _(expr, assumptions):
 
     if expr.is_number:
         return _PositivePredicate_number(expr, assumptions)
-    if ask(Q.positive(expr.base), assumptions):
-        if ask(Q.real(expr.exp), assumptions):
-            return True
+    if ask(Q.positive(expr.base), assumptions) and ask(
+        Q.real(expr.exp), assumptions
+    ):
+        return True
     if ask(Q.negative(expr.base), assumptions):
         if ask(Q.even(expr.exp), assumptions):
             return True

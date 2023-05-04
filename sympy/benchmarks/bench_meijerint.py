@@ -252,7 +252,7 @@ if __name__ == '__main__':
         sys.stdout.write('.')
         sys.stdout.flush()
         if n % (len(bench) // 10) == 0:
-            sys.stdout.write('%s' % (10*n // len(bench)))
+            sys.stdout.write(f'{10 * n // len(bench)}')
     print()
 
     timings.sort(key=lambda x: -x[0])

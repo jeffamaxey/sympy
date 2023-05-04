@@ -78,15 +78,13 @@ class BinaryRelation(Predicate):
     is_symmetric: Optional[bool] = None
 
     def __call__(self, *args):
-        if not len(args) == 2:
-            raise ValueError("Binary relation takes two arguments, but got %s." % len(args))
+        if len(args) != 2:
+            raise ValueError(f"Binary relation takes two arguments, but got {len(args)}.")
         return AppliedBinaryRelation(self, *args)
 
     @property
     def reversed(self):
-        if self.is_symmetric:
-            return self
-        return None
+        return self if self.is_symmetric else None
 
     @property
     def negated(self):
@@ -155,9 +153,7 @@ class AppliedBinaryRelation(AppliedPredicate):
         Try to return the relationship with sides reversed.
         """
         revfunc = self.function.reversed
-        if revfunc is None:
-            return self
-        return revfunc(self.rhs, self.lhs)
+        return self if revfunc is None else revfunc(self.rhs, self.lhs)
 
     @property
     def reversedsign(self):
@@ -167,7 +163,7 @@ class AppliedBinaryRelation(AppliedPredicate):
         revfunc = self.function.reversed
         if revfunc is None:
             return self
-        if not any(side.kind is BooleanKind for side in self.arguments):
+        if all(side.kind is not BooleanKind for side in self.arguments):
             return revfunc(-self.lhs, -self.rhs)
         return self
 
@@ -208,5 +204,5 @@ class AppliedBinaryRelation(AppliedPredicate):
     def __bool__(self):
         ret = ask(self)
         if ret is None:
-            raise TypeError("Cannot determine truth value of %s" % self)
+            raise TypeError(f"Cannot determine truth value of {self}")
         return ret

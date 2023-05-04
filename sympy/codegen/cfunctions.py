@@ -147,9 +147,7 @@ class log1p(Function):
         return (self.args[0] + S.One).is_nonnegative
 
     def _eval_is_finite(self):
-        if (self.args[0] + S.One).is_zero:
-            return False
-        return self.args[0].is_finite
+        return False if (self.args[0] + S.One).is_zero else self.args[0].is_finite
 
     def _eval_is_positive(self):
         return self.args[0].is_positive

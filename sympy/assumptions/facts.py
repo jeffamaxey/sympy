@@ -55,21 +55,23 @@ def get_known_facts(x=None):
     if x is None:
         x = Symbol('x')
 
-    fact = And(
+    return And(
         # primitive predicates for extended real exclude each other.
-        Exclusive(Q.negative_infinite(x), Q.negative(x), Q.zero(x),
-            Q.positive(x), Q.positive_infinite(x)),
-
+        Exclusive(
+            Q.negative_infinite(x),
+            Q.negative(x),
+            Q.zero(x),
+            Q.positive(x),
+            Q.positive_infinite(x),
+        ),
         # build complex plane
         Exclusive(Q.real(x), Q.imaginary(x)),
         Implies(Q.real(x) | Q.imaginary(x), Q.complex(x)),
-
         # other subsets of complex
         Exclusive(Q.transcendental(x), Q.algebraic(x)),
         Equivalent(Q.real(x), Q.rational(x) | Q.irrational(x)),
         Exclusive(Q.irrational(x), Q.rational(x)),
         Implies(Q.rational(x), Q.algebraic(x)),
-
         # integers
         Exclusive(Q.even(x), Q.odd(x)),
         Implies(Q.integer(x), Q.rational(x)),
@@ -77,20 +79,18 @@ def get_known_facts(x=None):
         Exclusive(Q.composite(x), Q.prime(x)),
         Implies(Q.composite(x) | Q.prime(x), Q.integer(x) & Q.positive(x)),
         Implies(Q.even(x) & Q.positive(x) & ~Q.prime(x), Q.composite(x)),
-
         # hermitian and antihermitian
         Implies(Q.real(x), Q.hermitian(x)),
         Implies(Q.imaginary(x), Q.antihermitian(x)),
         Implies(Q.zero(x), Q.hermitian(x) | Q.antihermitian(x)),
-
         # define finity and infinity, and build extended real line
         Exclusive(Q.infinite(x), Q.finite(x)),
         Implies(Q.complex(x), Q.finite(x)),
-        Implies(Q.negative_infinite(x) | Q.positive_infinite(x), Q.infinite(x)),
-
+        Implies(
+            Q.negative_infinite(x) | Q.positive_infinite(x), Q.infinite(x)
+        ),
         # commutativity
         Implies(Q.finite(x) | Q.infinite(x), Q.commutative(x)),
-
         # matrices
         Implies(Q.orthogonal(x), Q.positive_definite(x)),
         Implies(Q.orthogonal(x), Q.unitary(x)),
@@ -104,7 +104,9 @@ def get_known_facts(x=None):
         Implies(Q.diagonal(x), Q.lower_triangular(x)),
         Implies(Q.lower_triangular(x), Q.triangular(x)),
         Implies(Q.upper_triangular(x), Q.triangular(x)),
-        Implies(Q.triangular(x), Q.upper_triangular(x) | Q.lower_triangular(x)),
+        Implies(
+            Q.triangular(x), Q.upper_triangular(x) | Q.lower_triangular(x)
+        ),
         Implies(Q.upper_triangular(x) & Q.lower_triangular(x), Q.diagonal(x)),
         Implies(Q.diagonal(x), Q.symmetric(x)),
         Implies(Q.unit_triangular(x), Q.triangular(x)),
@@ -116,7 +118,6 @@ def get_known_facts(x=None):
         Implies(Q.integer_elements(x), Q.real_elements(x)),
         Implies(Q.real_elements(x), Q.complex_elements(x)),
     )
-    return fact
 
 
 def generate_known_facts_dict(keys, fact):
@@ -178,11 +179,7 @@ def get_known_facts_keys():
     ``generate_known_facts_dict``.
 
     """
-    exclude = set()
-    for pred in [Q.eq, Q.ne, Q.gt, Q.lt, Q.ge, Q.le]:
-        # exclude polyadic predicates
-        exclude.add(pred)
-
+    exclude = {Q.eq, Q.ne, Q.gt, Q.lt, Q.ge, Q.le}
     result = []
     for attr in Q.__class__.__dict__:
         if attr.startswith('__'):
@@ -215,6 +212,8 @@ def ask_full_inference(proposition, assumptions, known_facts_cnf):
     """
     if not satisfiable(And(known_facts_cnf, assumptions, proposition)):
         return False
-    if not satisfiable(And(known_facts_cnf, assumptions, Not(proposition))):
-        return True
-    return None
+    return (
+        None
+        if satisfiable(And(known_facts_cnf, assumptions, Not(proposition)))
+        else True
+    )

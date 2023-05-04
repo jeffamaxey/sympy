@@ -47,29 +47,26 @@ def mangle_docstrings(app, what, name, obj, options, lines,
         lines[:] = title_re.sub('', u_NL.join(lines)).split(u_NL)
     else:
         doc = get_doc_object(obj, what, u_NL.join(lines), config=cfg)
-        if sys.version_info[0] >= 3:
-            doc = str(doc)
-        else:
-            doc = unicode(doc)
+        doc = str(doc) if sys.version_info[0] >= 3 else unicode(doc)
         lines[:] = doc.split(u_NL)
 
     if (app.config.numpydoc_edit_link and hasattr(obj, '__name__') and
             obj.__name__):
         if hasattr(obj, '__module__'):
-            v = dict(full_name="{}.{}".format(obj.__module__, obj.__name__))
+            v = dict(full_name=f"{obj.__module__}.{obj.__name__}")
         else:
             v = dict(full_name=obj.__name__)
         lines += ['', '.. htmlonly::', '']
-        lines += ['    %s' % x for x in
-                  (app.config.numpydoc_edit_link % v).split("\n")]
+        lines += [
+            f'    {x}' for x in (app.config.numpydoc_edit_link % v).split("\n")
+        ]
 
     # replace reference numbers so that there are no duplicates
     references = []
     for line in lines:
         line = line.strip()
-        m = re.match('^.. \\[([a-z0-9_.-])\\]', line, re.I)
-        if m:
-            references.append(m.group(1))
+        if m := re.match('^.. \\[([a-z0-9_.-])\\]', line, re.I):
+            references.append(m[1])
 
     # start renaming from the longest string, to avoid overwriting parts
     references.sort(key=lambda x: -len(x))
@@ -80,10 +77,8 @@ def mangle_docstrings(app, what, name, obj, options, lines,
                     new_r = "R%d" % (reference_offset[0] + int(r))
                 else:
                     new_r = "%s%d" % (r, reference_offset[0])
-                lines[i] = lines[i].replace('[%s]_' % r,
-                                            '[%s]_' % new_r)
-                lines[i] = lines[i].replace('.. [%s]' % r,
-                                            '.. [%s]' % new_r)
+                lines[i] = lines[i].replace(f'[{r}]_', f'[{new_r}]_')
+                lines[i] = lines[i].replace(f'.. [{r}]', f'.. [{new_r}]')
 
     reference_offset[0] += len(references)
 
@@ -175,6 +170,9 @@ class NumpyCDomain(ManglingDomainBase, CDomain):
 
 
 def wrap_mangling_directive(base_directive, objtype):
+
+
+
     class directive(base_directive):
         def run(self):
             env = self.state.document.settings.env
@@ -182,7 +180,7 @@ def wrap_mangling_directive(base_directive, objtype):
             name = None
             if self.arguments:
                 m = re.match(r'^(.*\s+)?(.*?)(\(.*)?', self.arguments[0])
-                name = m.group(2).strip()
+                name = m[2].strip()
 
             if not name:
                 name = self.arguments[0]
@@ -192,5 +190,6 @@ def wrap_mangling_directive(base_directive, objtype):
             self.content = ViewList(lines, self.content.parent)
 
             return base_directive.run(self)
+
 
     return directive

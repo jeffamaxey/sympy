@@ -129,14 +129,14 @@ def main():
         start = perf_counter()
         p[4] = x**2 + y**2, [100], [100], 'style=solid'
         p.wait_for_calculations()
-        print("lambda-based calculation took %s seconds." % (perf_counter() - start))
+        print(f"lambda-based calculation took {perf_counter() - start} seconds.")
 
         start = perf_counter()
         p[4] = x**2 + y**2, [100], [100], 'style=solid; use_sympy_eval'
         p.wait_for_calculations()
         print(
-            "sympy substitution-based calculation took %s seconds." %
-            (perf_counter() - start))
+            f"sympy substitution-based calculation took {perf_counter() - start} seconds."
+        )
 
     @example_wrapper
     def gradient_vectors():
@@ -156,9 +156,7 @@ def main():
                 FG = lambdify([x, y], [dx, dy, dz])
                 iu.v_steps /= 5
                 iv.v_steps /= 5
-                Gvl = list(list([FF(u, v), FG(u, v)]
-                                for v in iv.frange())
-                           for u in iu.frange())
+                Gvl = [[[FF(u, v), FG(u, v)] for v in iv.frange()] for u in iu.frange()]
 
                 def draw_arrow(p1, p2):
                     """
@@ -184,6 +182,7 @@ def main():
                     glEnd()
 
                 return draw
+
             p[i] = f, [-0.5, 0.5, 25], [-0.5, 0.5, 25], 'style=solid'
             iu = PlotInterval(p[i].intervals[0])
             iv = PlotInterval(p[i].intervals[1])

@@ -30,9 +30,7 @@ class Converter(ImageConverter):
             if os.system("where chrome") == 0:
                 return "chrome"
             path = os.path.join(os.environ["PROGRAMW6432"], "Google\\Chrome\\Application\\chrome.exe")
-            if os.path.exists(path):
-                return f'"{path}"'
-            return None
+            return f'"{path}"' if os.path.exists(path) else None
         if os.system("chrome --version") == 0:
             return "chrome"
         if platform.mac_ver()[0]:
@@ -46,9 +44,7 @@ class Converter(ImageConverter):
             if os.system("where chromium") == 0:
                 return "chromium"
             path = os.path.join(os.environ["PROGRAMW6432"], "Chromium\\Application\\chrome.exe")
-            if os.path.exists(path):
-                return f'"{path}"'
-            return None
+            return f'"{path}"' if os.path.exists(path) else None
         if os.system("chromium --version") == 0:
             return "chromium"
         if platform.mac_ver()[0]:

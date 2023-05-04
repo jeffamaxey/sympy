@@ -34,10 +34,7 @@ class ReferenceSimplex:
         coords = self.coords
         nsd = self.nsd
 
-        limit = 1
-        for p in coords:
-            limit -= p
-
+        limit = 1 - sum(coords)
         intf = f
         for d in range(0, nsd):
             p = coords[d]

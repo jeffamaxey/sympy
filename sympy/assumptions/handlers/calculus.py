@@ -25,9 +25,7 @@ def _(expr, assumptions):
     """
     if expr.is_finite is not None:
         return expr.is_finite
-    if Q.finite(expr) in conjuncts(assumptions):
-        return True
-    return None
+    return True if Q.finite(expr) in conjuncts(assumptions) else None
 
 @FinitePredicate.register(Add)
 def _(expr, assumptions):
@@ -190,13 +188,11 @@ def _(expr, assumptions):
         return False
     if base_bounded and exp_bounded:
         return True
-    if (abs(expr.base) <= 1) == True and ask(Q.extended_positive(expr.exp), assumptions):
+    if abs(expr.base) <= 1 and ask(Q.extended_positive(expr.exp), assumptions):
         return True
-    if (abs(expr.base) >= 1) == True and ask(Q.extended_negative(expr.exp), assumptions):
+    if abs(expr.base) >= 1 and ask(Q.extended_negative(expr.exp), assumptions):
         return True
-    if (abs(expr.base) >= 1) == True and exp_bounded is False:
-        return False
-    return None
+    return False if abs(expr.base) >= 1 and exp_bounded is False else None
 
 @FinitePredicate.register(exp)
 def _(expr, assumptions):

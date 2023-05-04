@@ -24,8 +24,8 @@ def build_html(docsdir, outputdir, version):
     run('make', 'html', cwd=docsdir)
 
     builddir = join(docsdir, '_build')
-    docsname = 'sympy-docs-html-%s' % (version,)
-    zipname = docsname + '.zip'
+    docsname = f'sympy-docs-html-{version}'
+    zipname = f'{docsname}.zip'
     cwd = os.getcwd()
     try:
         chdir(builddir)
@@ -40,8 +40,8 @@ def build_latex(docsdir, outputdir, version):
     run('make', 'clean', cwd=docsdir)
     run('make', 'latexpdf', cwd=docsdir)
 
-    srcfilename = 'sympy-%s.pdf' % (version,)
-    dstfilename = 'sympy-docs-pdf-%s.pdf' % (version,)
+    srcfilename = f'sympy-{version}.pdf'
+    dstfilename = f'sympy-docs-pdf-{version}.pdf'
     src = join('doc', '_build', 'latex', srcfilename)
     dst = join(outputdir, dstfilename)
     shutil.copyfile(src, dst)

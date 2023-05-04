@@ -285,25 +285,25 @@ class AccumulationBounds(Expr):
 
     @_sympifyit('other', NotImplemented)
     def __add__(self, other):
-        if isinstance(other, Expr):
-            if isinstance(other, AccumBounds):
-                return AccumBounds(
-                    Add(self.min, other.min),
-                    Add(self.max, other.max))
-            if other is S.Infinity and self.min is S.NegativeInfinity or \
+        if not isinstance(other, Expr):
+            return NotImplemented
+        if isinstance(other, AccumBounds):
+            return AccumBounds(
+                Add(self.min, other.min),
+                Add(self.max, other.max))
+        if other is S.Infinity and self.min is S.NegativeInfinity or \
                     other is S.NegativeInfinity and self.max is S.Infinity:
+            return AccumBounds(-oo, oo)
+        elif other.is_extended_real:
+            if self.min is S.NegativeInfinity and self.max is S.Infinity:
                 return AccumBounds(-oo, oo)
-            elif other.is_extended_real:
-                if self.min is S.NegativeInfinity and self.max is S.Infinity:
-                    return AccumBounds(-oo, oo)
-                elif self.min is S.NegativeInfinity:
-                    return AccumBounds(-oo, self.max + other)
-                elif self.max is S.Infinity:
-                    return AccumBounds(self.min + other, oo)
-                else:
-                    return AccumBounds(Add(self.min, other), Add(self.max, other))
-            return Add(self, other, evaluate=False)
-        return NotImplemented
+            elif self.min is S.NegativeInfinity:
+                return AccumBounds(-oo, self.max + other)
+            elif self.max is S.Infinity:
+                return AccumBounds(self.min + other, oo)
+            else:
+                return AccumBounds(Add(self.min, other), Add(self.max, other))
+        return Add(self, other, evaluate=False)
 
     __radd__ = __add__
 
@@ -312,27 +312,27 @@ class AccumulationBounds(Expr):
 
     @_sympifyit('other', NotImplemented)
     def __sub__(self, other):
-        if isinstance(other, Expr):
-            if isinstance(other, AccumBounds):
-                return AccumBounds(
-                    Add(self.min, -other.max),
-                    Add(self.max, -other.min))
-            if other is S.NegativeInfinity and self.min is S.NegativeInfinity or \
+        if not isinstance(other, Expr):
+            return NotImplemented
+        if isinstance(other, AccumBounds):
+            return AccumBounds(
+                Add(self.min, -other.max),
+                Add(self.max, -other.min))
+        if other is S.NegativeInfinity and self.min is S.NegativeInfinity or \
                     other is S.Infinity and self.max is S.Infinity:
+            return AccumBounds(-oo, oo)
+        elif other.is_extended_real:
+            if self.min is S.NegativeInfinity and self.max is S.Infinity:
                 return AccumBounds(-oo, oo)
-            elif other.is_extended_real:
-                if self.min is S.NegativeInfinity and self.max is S.Infinity:
-                    return AccumBounds(-oo, oo)
-                elif self.min is S.NegativeInfinity:
-                    return AccumBounds(-oo, self.max - other)
-                elif self.max is S.Infinity:
-                    return AccumBounds(self.min - other, oo)
-                else:
-                    return AccumBounds(
-                        Add(self.min, -other),
-                        Add(self.max, -other))
-            return Add(self, -other, evaluate=False)
-        return NotImplemented
+            elif self.min is S.NegativeInfinity:
+                return AccumBounds(-oo, self.max - other)
+            elif self.max is S.Infinity:
+                return AccumBounds(self.min - other, oo)
+            else:
+                return AccumBounds(
+                    Add(self.min, -other),
+                    Add(self.max, -other))
+        return Add(self, -other, evaluate=False)
 
     @_sympifyit('other', NotImplemented)
     def __rsub__(self, other):
@@ -366,9 +366,8 @@ class AccumulationBounds(Expr):
                 if other.is_zero:
                     if self.max is S.Infinity:
                         return AccumBounds(0, oo)
-                    if self.min is S.NegativeInfinity:
-                        return AccumBounds(-oo, 0)
-                    return S.Zero
+                    else:
+                        return AccumBounds(-oo, 0) if self.min is S.NegativeInfinity else S.Zero
                 if other.is_extended_positive:
                     return AccumBounds(
                         Mul(self.min, other),
@@ -377,192 +376,194 @@ class AccumulationBounds(Expr):
                     return AccumBounds(
                         Mul(self.max, other),
                         Mul(self.min, other))
-            if isinstance(other, Order):
-                return other
-            return Mul(self, other, evaluate=False)
+            return other if isinstance(other, Order) else Mul(self, other, evaluate=False)
         return NotImplemented
 
     __rmul__ = __mul__
 
     @_sympifyit('other', NotImplemented)
     def __truediv__(self, other):
-        if isinstance(other, Expr):
-            if isinstance(other, AccumBounds):
-                if other.min.is_positive or other.max.is_negative:
-                    return self * AccumBounds(1/other.max, 1/other.min)
+        if not isinstance(other, Expr):
+            return NotImplemented
+        if isinstance(other, AccumBounds):
+            if other.min.is_positive or other.max.is_negative:
+                return self * AccumBounds(1/other.max, 1/other.min)
 
-                if (self.min.is_extended_nonpositive and self.max.is_extended_nonnegative and
+            if (self.min.is_extended_nonpositive and self.max.is_extended_nonnegative and
                     other.min.is_extended_nonpositive and other.max.is_extended_nonnegative):
-                    if self.min.is_zero and other.min.is_zero:
-                        return AccumBounds(0, oo)
-                    if self.max.is_zero and other.min.is_zero:
-                        return AccumBounds(-oo, 0)
-                    return AccumBounds(-oo, oo)
-
-                if self.max.is_extended_negative:
-                    if other.min.is_extended_negative:
-                        if other.max.is_zero:
-                            return AccumBounds(self.max / other.min, oo)
-                        if other.max.is_extended_positive:
-                            # if we were dealing with intervals we would return
-                            # Union(Interval(-oo, self.max/other.max),
-                            #       Interval(self.max/other.min, oo))
-                            return AccumBounds(-oo, oo)
-
-                    if other.min.is_zero and other.max.is_extended_positive:
-                        return AccumBounds(-oo, self.max / other.max)
-
-                if self.min.is_extended_positive:
-                    if other.min.is_extended_negative:
-                        if other.max.is_zero:
-                            return AccumBounds(-oo, self.min / other.min)
-                        if other.max.is_extended_positive:
-                            # if we were dealing with intervals we would return
-                            # Union(Interval(-oo, self.min/other.min),
-                            #       Interval(self.min/other.max, oo))
-                            return AccumBounds(-oo, oo)
-
-                    if other.min.is_zero and other.max.is_extended_positive:
-                        return AccumBounds(self.min / other.max, oo)
-
-            elif other.is_extended_real:
-                if other in (S.Infinity, S.NegativeInfinity):
-                    if self == AccumBounds(-oo, oo):
+                if self.min.is_zero and other.min.is_zero:
+                    return AccumBounds(0, oo)
+                else:
+                    return (
+                        AccumBounds(-oo, 0)
+                        if self.max.is_zero and other.min.is_zero
+                        else AccumBounds(-oo, oo)
+                    )
+            if self.max.is_extended_negative:
+                if other.min.is_extended_negative:
+                    if other.max.is_zero:
+                        return AccumBounds(self.max / other.min, oo)
+                    if other.max.is_extended_positive:
+                        # if we were dealing with intervals we would return
+                        # Union(Interval(-oo, self.max/other.max),
+                        #       Interval(self.max/other.min, oo))
                         return AccumBounds(-oo, oo)
-                    if self.max is S.Infinity:
-                        return AccumBounds(Min(0, other), Max(0, other))
-                    if self.min is S.NegativeInfinity:
-                        return AccumBounds(Min(0, -other), Max(0, -other))
-                if other.is_extended_positive:
-                    return AccumBounds(self.min / other, self.max / other)
-                elif other.is_extended_negative:
-                    return AccumBounds(self.max / other, self.min / other)
-            if (1 / other) is S.ComplexInfinity:
-                return Mul(self, 1 / other, evaluate=False)
-            else:
-                return Mul(self, 1 / other)
 
-        return NotImplemented
+                if other.min.is_zero and other.max.is_extended_positive:
+                    return AccumBounds(-oo, self.max / other.max)
+
+            if self.min.is_extended_positive:
+                if other.min.is_extended_negative:
+                    if other.max.is_zero:
+                        return AccumBounds(-oo, self.min / other.min)
+                    if other.max.is_extended_positive:
+                        # if we were dealing with intervals we would return
+                        # Union(Interval(-oo, self.min/other.min),
+                        #       Interval(self.min/other.max, oo))
+                        return AccumBounds(-oo, oo)
+
+                if other.min.is_zero and other.max.is_extended_positive:
+                    return AccumBounds(self.min / other.max, oo)
+
+        elif other.is_extended_real:
+            if other in (S.Infinity, S.NegativeInfinity):
+                if self == AccumBounds(-oo, oo):
+                    return AccumBounds(-oo, oo)
+                if self.max is S.Infinity:
+                    return AccumBounds(Min(0, other), Max(0, other))
+                if self.min is S.NegativeInfinity:
+                    return AccumBounds(Min(0, -other), Max(0, -other))
+            if other.is_extended_positive:
+                return AccumBounds(self.min / other, self.max / other)
+            elif other.is_extended_negative:
+                return AccumBounds(self.max / other, self.min / other)
+        return (
+            Mul(self, 1 / other, evaluate=False)
+            if (1 / other) is S.ComplexInfinity
+            else Mul(self, 1 / other)
+        )
 
     @_sympifyit('other', NotImplemented)
     def __rtruediv__(self, other):
-        if isinstance(other, Expr):
-            if other.is_extended_real:
-                if other.is_zero:
-                    return S.Zero
-                if (self.min.is_extended_nonpositive and self.max.is_extended_nonnegative):
-                    if self.min.is_zero:
-                        if other.is_extended_positive:
-                            return AccumBounds(Mul(other, 1 / self.max), oo)
-                        if other.is_extended_negative:
-                            return AccumBounds(-oo, Mul(other, 1 / self.max))
-                    if self.max.is_zero:
-                        if other.is_extended_positive:
-                            return AccumBounds(-oo, Mul(other, 1 / self.min))
-                        if other.is_extended_negative:
-                            return AccumBounds(Mul(other, 1 / self.min), oo)
-                    return AccumBounds(-oo, oo)
-                else:
-                    return AccumBounds(Min(other / self.min, other / self.max),
-                                       Max(other / self.min, other / self.max))
-            return Mul(other, 1 / self, evaluate=False)
-        else:
+        if not isinstance(other, Expr):
             return NotImplemented
+        if other.is_extended_real:
+            if other.is_zero:
+                return S.Zero
+            if (
+                not self.min.is_extended_nonpositive
+                or not self.max.is_extended_nonnegative
+            ):
+                return AccumBounds(Min(other / self.min, other / self.max),
+                                   Max(other / self.min, other / self.max))
+            if self.min.is_zero:
+                if other.is_extended_positive:
+                    return AccumBounds(Mul(other, 1 / self.max), oo)
+                if other.is_extended_negative:
+                    return AccumBounds(-oo, Mul(other, 1 / self.max))
+            if self.max.is_zero:
+                if other.is_extended_positive:
+                    return AccumBounds(-oo, Mul(other, 1 / self.min))
+                if other.is_extended_negative:
+                    return AccumBounds(Mul(other, 1 / self.min), oo)
+            return AccumBounds(-oo, oo)
+        return Mul(other, 1 / self, evaluate=False)
 
     @_sympifyit('other', NotImplemented)
     def __pow__(self, other):
-        if isinstance(other, Expr):
-            if other is S.Infinity:
-                if self.min.is_extended_nonnegative:
+        if not isinstance(other, Expr):
+            return NotImplemented
+        if other is S.Infinity:
+            if self.min.is_extended_nonnegative:
+                if self.max < 1:
+                    return S.Zero
+                return S.Infinity if self.min > 1 else AccumBounds(0, oo)
+            elif self.max.is_extended_negative:
+                if self.min > -1:
+                    return S.Zero
+                return zoo if self.max < -1 else S.NaN
+            else:
+                if self.min > -1:
                     if self.max < 1:
                         return S.Zero
-                    if self.min > 1:
-                        return S.Infinity
                     return AccumBounds(0, oo)
-                elif self.max.is_extended_negative:
-                    if self.min > -1:
-                        return S.Zero
-                    if self.max < -1:
-                        return zoo
-                    return S.NaN
-                else:
-                    if self.min > -1:
-                        if self.max < 1:
-                            return S.Zero
-                        return AccumBounds(0, oo)
-                    return AccumBounds(-oo, oo)
+                return AccumBounds(-oo, oo)
 
-            if other is S.NegativeInfinity:
-                return (1/self)**oo
+        if other is S.NegativeInfinity:
+            return (1/self)**oo
 
             # generically true
-            if (self.max - self.min).is_nonnegative:
-                # well defined
-                if self.min.is_nonnegative:
-                    # no 0 to worry about
-                    if other.is_nonnegative:
-                        # no infinity to worry about
-                        return self.func(self.min**other, self.max**other)
+        if (
+            (self.max - self.min).is_nonnegative
+            and self.min.is_nonnegative
+            and other.is_nonnegative
+        ):
+            # no infinity to worry about
+            return self.func(self.min**other, self.max**other)
 
-            if other.is_zero:
-                return S.One  # x**0 = 1
+        if other.is_zero:
+            return S.One  # x**0 = 1
 
-            if other.is_Integer or other.is_integer:
-                if self.min.is_extended_positive:
-                    return AccumBounds(
-                        Min(self.min**other, self.max**other),
-                        Max(self.min**other, self.max**other))
-                elif self.max.is_extended_negative:
-                    return AccumBounds(
-                        Min(self.max**other, self.min**other),
-                        Max(self.max**other, self.min**other))
+        if other.is_Integer or other.is_integer:
+            if self.min.is_extended_positive:
+                return AccumBounds(
+                    Min(self.min**other, self.max**other),
+                    Max(self.min**other, self.max**other))
+            elif self.max.is_extended_negative:
+                return AccumBounds(
+                    Min(self.max**other, self.min**other),
+                    Max(self.max**other, self.min**other))
 
-                if other % 2 == 0:
-                    if other.is_extended_negative:
-                        if self.min.is_zero:
-                            return AccumBounds(self.max**other, oo)
-                        if self.max.is_zero:
-                            return AccumBounds(self.min**other, oo)
-                        return AccumBounds(0, oo)
-                    return AccumBounds(
-                        S.Zero, Max(self.min**other, self.max**other))
-                elif other % 2 == 1:
-                    if other.is_extended_negative:
-                        if self.min.is_zero:
-                            return AccumBounds(self.max**other, oo)
-                        if self.max.is_zero:
-                            return AccumBounds(-oo, self.min**other)
-                        return AccumBounds(-oo, oo)
-                    return AccumBounds(self.min**other, self.max**other)
+            if other % 2 == 0:
+                if other.is_extended_negative:
+                    if self.min.is_zero:
+                        return AccumBounds(self.max**other, oo)
+                    else:
+                        return (
+                            AccumBounds(self.min**other, oo)
+                            if self.max.is_zero
+                            else AccumBounds(0, oo)
+                        )
+                return AccumBounds(
+                    S.Zero, Max(self.min**other, self.max**other))
+            elif other % 2 == 1:
+                if other.is_extended_negative:
+                    if self.min.is_zero:
+                        return AccumBounds(self.max**other, oo)
+                    else:
+                        return (
+                            AccumBounds(-oo, self.min**other)
+                            if self.max.is_zero
+                            else AccumBounds(-oo, oo)
+                        )
+                return AccumBounds(self.min**other, self.max**other)
 
             # non-integer exponent
             # 0**neg or neg**frac yields complex
-            if (other.is_number or other.is_rational) and (
-                    self.min.is_extended_nonnegative or (
-                    other.is_extended_nonnegative and
-                    self.min.is_extended_nonnegative)):
-                num, den = other.as_numer_denom()
-                if num is S.One:
-                    return AccumBounds(*[i**(1/den) for i in self.args])
+        if (
+            other.is_number or other.is_rational
+        ) and self.min.is_extended_nonnegative:
+            num, den = other.as_numer_denom()
+            if num is S.One:
+                return AccumBounds(*[i**(1/den) for i in self.args])
 
-                elif den is not S.One:  # e.g. if other is not Float
-                    return (self**num)**(1/den)  # ok for non-negative base
+            elif den is not S.One:  # e.g. if other is not Float
+                return (self**num)**(1/den)  # ok for non-negative base
 
-            if isinstance(other, AccumBounds):
-                if (self.min.is_extended_positive or
-                        self.min.is_extended_nonnegative and
-                        other.min.is_extended_nonnegative):
-                    p = [self**i for i in other.args]
-                    if not any(i.is_Pow for i in p):
-                        a = [j for i in p for j in i.args or (i,)]
-                        try:
-                            return self.func(min(a), max(a))
-                        except TypeError:  # can't sort
-                            pass
+        if isinstance(other, AccumBounds) and (
+            self.min.is_extended_positive
+            or self.min.is_extended_nonnegative
+            and other.min.is_extended_nonnegative
+        ):
+            p = [self**i for i in other.args]
+            if not any(i.is_Pow for i in p):
+                a = [j for i in p for j in i.args or (i,)]
+                try:
+                    return self.func(min(a), max(a))
+                except TypeError:  # can't sort
+                    pass
 
-            return Pow(self, other, evaluate=False)
-
-        return NotImplemented
+        return Pow(self, other, evaluate=False)
 
     @_sympifyit('other', NotImplemented)
     def __rpow__(self, other):
@@ -617,10 +618,7 @@ class AccumulationBounds(Expr):
         other = _sympify(other)
 
         if other in (S.Infinity, S.NegativeInfinity):
-            if self.min is S.NegativeInfinity or self.max is S.Infinity:
-                return True
-            return False
-
+            return self.min is S.NegativeInfinity or self.max is S.Infinity
         rv = And(self.min <= other, self.max >= other)
         if rv not in (True, False):
             raise TypeError("input failed to evaluate")
@@ -673,11 +671,7 @@ class AccumulationBounds(Expr):
             return S.EmptySet
 
         if self.min <= other.min:
-            if self.max <= other.max:
-                return AccumBounds(other.min, self.max)
-            if self.max > other.max:
-                return other
-
+            return AccumBounds(other.min, self.max) if self.max <= other.max else other
         if other.min <= self.min:
             if other.max < self.max:
                 return AccumBounds(self.min, other.max)
@@ -708,7 +702,7 @@ def _eval_is_le(lhs, rhs): # noqa:F811
 
 
 @dispatch(AccumulationBounds, Basic) # type: ignore # noqa:F811
-def _eval_is_le(lhs, rhs): # noqa: F811
+def _eval_is_le(lhs, rhs):    # noqa: F811
 
     """
     Returns ``True `` if range of values attained by ``lhs`` AccumulationBounds
@@ -730,9 +724,7 @@ def _eval_is_le(lhs, rhs): # noqa: F811
 
     """
     if not rhs.is_extended_real:
-            raise TypeError(
-                "Invalid comparison of %s %s" %
-                (type(rhs), rhs))
+        raise TypeError(f"Invalid comparison of {type(rhs)} {rhs}")
     elif rhs.is_comparable:
         if is_le(lhs.max, rhs):
             return True
@@ -749,7 +741,7 @@ def _eval_is_ge(lhs, rhs): # noqa:F811
 
 
 @dispatch(AccumulationBounds, Expr)  # type:ignore
-def _eval_is_ge(lhs, rhs): # noqa: F811
+def _eval_is_ge(lhs, rhs):    # noqa: F811
     """
     Returns ``True`` if range of values attained by ``lhs`` AccumulationBounds
     object is less that the range of values attained by ``rhs``, where
@@ -770,9 +762,7 @@ def _eval_is_ge(lhs, rhs): # noqa: F811
     """
 
     if not rhs.is_extended_real:
-        raise TypeError(
-            "Invalid comparison of %s %s" %
-            (type(rhs), rhs))
+        raise TypeError(f"Invalid comparison of {type(rhs)} {rhs}")
     elif rhs.is_comparable:
         if is_ge(lhs.min, rhs):
             return True
@@ -783,9 +773,7 @@ def _eval_is_ge(lhs, rhs): # noqa: F811
 @dispatch(Expr, AccumulationBounds)  # type:ignore
 def _eval_is_ge(lhs, rhs): # noqa:F811
     if not lhs.is_extended_real:
-        raise TypeError(
-            "Invalid comparison of %s %s" %
-            (type(lhs), lhs))
+        raise TypeError(f"Invalid comparison of {type(lhs)} {lhs}")
     elif lhs.is_comparable:
         if is_le(rhs.max, lhs):
             return True

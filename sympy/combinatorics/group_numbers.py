@@ -34,7 +34,7 @@ def is_nilpotent_number(n):
     is_nilpotent = True
     for p_j, a_j in prime_factors:
         for p_i, a_i in prime_factors:
-            if any([Mod(Pow(p_i, k), p_j) == 1 for k in range(1, a_i + 1)]):
+            if any(Mod(Pow(p_i, k), p_j) == 1 for k in range(1, a_i + 1)):
                 is_nilpotent = False
                 break
         if not is_nilpotent:
@@ -77,8 +77,7 @@ def is_abelian_number(n):
         return False
 
     prime_factors = list(factorint(n).items())
-    is_abelian = all(a_i < 3 for p_i, a_i in prime_factors)
-    return is_abelian
+    return all(a_i < 3 for p_i, a_i in prime_factors)
 
 
 def is_cyclic_number(n):
@@ -114,5 +113,4 @@ def is_cyclic_number(n):
         return False
 
     prime_factors = list(factorint(n).items())
-    is_cyclic = all(a_i < 2 for p_i, a_i in prime_factors)
-    return is_cyclic
+    return all(a_i < 2 for p_i, a_i in prime_factors)

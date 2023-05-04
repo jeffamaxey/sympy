@@ -55,7 +55,7 @@ class AssumptionsWrapperMeta(ManagedProperties):
     """
     def __init__(cls, *args, **kws):
         for fact in _assume_defined:
-            pname = "_eval_%s" % as_property(fact)
+            pname = f"_eval_{as_property(fact)}"
             setattr(cls, pname, make_eval_method(fact))
         super().__init__(cls, *args, **kws)
 

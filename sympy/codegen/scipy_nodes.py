@@ -32,7 +32,4 @@ class cosm1(Function):
 
     def _eval_simplify(self, x, **kwargs):
         candidate = _cosm1(x.simplify(**kwargs))
-        if candidate != _cosm1(x, evaluate=False):
-            return candidate
-        else:
-            return cosm1(x)
+        return candidate if candidate != _cosm1(x, evaluate=False) else cosm1(x)

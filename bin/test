@@ -7,6 +7,7 @@ The advantage over py.test is that it only depends on sympy and should just
 work in any circumstances. See "sympy.test?" for documentation.
 """
 
+
 from __future__ import print_function
 
 import sys
@@ -94,14 +95,23 @@ if options.types:
 
 import sympy
 
-ok = sympy.test(*args, verbose=options.verbose, kw=options.kw,
-    tb=options.tb, pdb=options.pdb, colors=options.colors,
-    force_colors=options.force_colors, sort=options.sort,
-    seed=options.seed, slow=options.slow, timeout=options.timeout,
-    subprocess=options.subprocess, enhance_asserts=options.enhance_asserts,
-    split=options.split, rerun=options.rerun)
-
-if ok:
+if ok := sympy.test(
+    *args,
+    verbose=options.verbose,
+    kw=options.kw,
+    tb=options.tb,
+    pdb=options.pdb,
+    colors=options.colors,
+    force_colors=options.force_colors,
+    sort=options.sort,
+    seed=options.seed,
+    slow=options.slow,
+    timeout=options.timeout,
+    subprocess=options.subprocess,
+    enhance_asserts=options.enhance_asserts,
+    split=options.split,
+    rerun=options.rerun,
+):
     sys.exit(0)
 else:
     sys.exit(1)

@@ -16,7 +16,7 @@ def main():
     m = Mul(x, y, evaluate=False)
     # Evaluating the expression
     e = S(2)**50/S(10)**50
-    print("{} == {}".format(m, e))
+    print(f"{m} == {e}")
 
 if __name__ == "__main__":
     main()

@@ -95,10 +95,7 @@ def _(expr, assumptions):
     # Now it duplicates the general fact: Implies(Q.diagonal, Q.symmetric).
     if ask(Q.diagonal(expr), assumptions):
         return True
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.symmetric(expr.parent), assumptions)
+    return ask(Q.symmetric(expr.parent), assumptions) if expr.on_diag else None
 
 @SymmetricPredicate.register(Identity)
 def _(expr, assumptions):
@@ -120,12 +117,14 @@ def _(expr, assumptions):
 def _(expr, assumptions):
     # only for integer powers
     base, exp = expr.args
-    int_exp = ask(Q.integer(exp), assumptions)
-    if not int_exp:
+    if int_exp := ask(Q.integer(exp), assumptions):
+        return (
+            ask(Q.invertible(base), assumptions)
+            if exp.is_negative == False
+            else None
+        )
+    else:
         return None
-    if exp.is_negative == False:
-        return ask(Q.invertible(base), assumptions)
-    return None
 
 @InvertiblePredicate.register(MatAdd)
 def _(expr, assumptions):
@@ -156,22 +155,15 @@ def _(expr, assumptions):
 
 @InvertiblePredicate.register(MatrixSlice)
 def _(expr, assumptions):
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.invertible(expr.parent), assumptions)
+    return ask(Q.invertible(expr.parent), assumptions) if expr.on_diag else None
 
 @InvertiblePredicate.register(MatrixBase)
 def _(expr, assumptions):
-    if not expr.is_square:
-        return False
-    return expr.rank() == expr.rows
+    return expr.rank() == expr.rows if expr.is_square else False
 
 @InvertiblePredicate.register(MatrixExpr)
 def _(expr, assumptions):
-    if not expr.is_square:
-        return False
-    return None
+    return None if expr.is_square else False
 
 @InvertiblePredicate.register(BlockMatrix)
 def _(expr, assumptions):
@@ -223,8 +215,7 @@ def _(expr, assumptions):
 def _(expr, assumptions):
     # only for integer powers
     base, exp = expr.args
-    int_exp = ask(Q.integer(exp), assumptions)
-    if int_exp:
+    if int_exp := ask(Q.integer(exp), assumptions):
         return ask(Q.orthogonal(base), assumptions)
     return None
 
@@ -256,10 +247,7 @@ def _(expr, assumptions):
 
 @OrthogonalPredicate.register(MatrixSlice)
 def _(expr, assumptions):
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.orthogonal(expr.parent), assumptions)
+    return ask(Q.orthogonal(expr.parent), assumptions) if expr.on_diag else None
 
 @OrthogonalPredicate.register(Factorization)
 def _(expr, assumptions):
@@ -282,8 +270,7 @@ def _(expr, assumptions):
 def _(expr, assumptions):
     # only for integer powers
     base, exp = expr.args
-    int_exp = ask(Q.integer(exp), assumptions)
-    if int_exp:
+    if int_exp := ask(Q.integer(exp), assumptions):
         return ask(Q.unitary(base), assumptions)
     return None
 
@@ -301,10 +288,7 @@ def _(expr, assumptions):
 
 @UnitaryPredicate.register(MatrixSlice)
 def _(expr, assumptions):
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.unitary(expr.parent), assumptions)
+    return ask(Q.unitary(expr.parent), assumptions) if expr.on_diag else None
 
 @UnitaryPredicate.register_many(DFT, Identity)
 def _(expr, assumptions):
@@ -408,10 +392,11 @@ def _(expr, assumptions):
 
 @PositiveDefinitePredicate.register(MatrixSlice)
 def _(expr, assumptions):
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.positive_definite(expr.parent), assumptions)
+    return (
+        ask(Q.positive_definite(expr.parent), assumptions)
+        if expr.on_diag
+        else None
+    )
 
 
 # UpperTriangularPredicate
@@ -463,10 +448,11 @@ def _(expr, assumptions):
 
 @UpperTriangularPredicate.register(MatrixSlice)
 def _(expr, assumptions):
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.upper_triangular(expr.parent), assumptions)
+    return (
+        ask(Q.upper_triangular(expr.parent), assumptions)
+        if expr.on_diag
+        else None
+    )
 
 @UpperTriangularPredicate.register(Factorization)
 def _(expr, assumptions):
@@ -521,10 +507,11 @@ def _(expr, assumptions):
 
 @LowerTriangularPredicate.register(MatrixSlice)
 def _(expr, assumptions):
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.lower_triangular(expr.parent), assumptions)
+    return (
+        ask(Q.lower_triangular(expr.parent), assumptions)
+        if expr.on_diag
+        else None
+    )
 
 @LowerTriangularPredicate.register(Factorization)
 def _(expr, assumptions):
@@ -581,10 +568,7 @@ def _(expr, assumptions):
 def _(expr, assumptions):
     if _is_empty_or_1x1(expr):
         return True
-    if not expr.on_diag:
-        return None
-    else:
-        return ask(Q.diagonal(expr.parent), assumptions)
+    return ask(Q.diagonal(expr.parent), assumptions) if expr.on_diag else None
 
 @DiagonalPredicate.register_many(DiagonalMatrix, DiagMatrix, Identity, ZeroMatrix)
 def _(expr, assumptions):
@@ -622,12 +606,14 @@ def _(expr, assumptions):
 def _(expr, assumptions):
     # only for integer powers
     base, exp = expr.args
-    int_exp = ask(Q.integer(exp), assumptions)
-    if not int_exp:
+    if int_exp := ask(Q.integer(exp), assumptions):
+        return (
+            ask(Q.integer_elements(base), assumptions)
+            if exp.is_negative == False
+            else None
+        )
+    else:
         return None
-    if exp.is_negative == False:
-        return ask(Q.integer_elements(base), assumptions)
-    return None
 
 @IntegerElementsPredicate.register_many(Identity, OneMatrix, ZeroMatrix)
 def _(expr, assumptions):

@@ -40,7 +40,7 @@ def send(kind, output=None):
     elif kind == "latex":
         output = latex(output)
 
-    message = "%s:%s" %  (kind, output)
+    message = f"{kind}:{output}"
 
     os.sys.stdout.write(BEGIN)
     os.sys.stdout.write(message)

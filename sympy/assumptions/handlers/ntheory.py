@@ -97,22 +97,16 @@ def _(expr, assumptions):
 
 @CompositePredicate.register(Basic)
 def _(expr, assumptions):
-    _positive = ask(Q.positive(expr), assumptions)
-    if _positive:
-        _integer = ask(Q.integer(expr), assumptions)
-        if _integer:
-            _prime = ask(Q.prime(expr), assumptions)
-            if _prime is None:
-                return
+    if not (_positive := ask(Q.positive(expr), assumptions)):
+        return _positive
+    if not (_integer := ask(Q.integer(expr), assumptions)):
+        return _integer
+    _prime = ask(Q.prime(expr), assumptions)
+    if _prime is None:
+        return
             # Positive integer which is not prime is not
             # necessarily composite
-            if expr.equals(1):
-                return False
-            return not _prime
-        else:
-            return _integer
-    else:
-        return _positive
+    return False if expr.equals(1) else not _prime
 
 
 # EvenPredicate
@@ -125,9 +119,7 @@ def _EvenPredicate_number(expr, assumptions):
             raise TypeError
     except TypeError:
         return False
-    if isinstance(expr, (float, Float)):
-        return False
-    return i % 2 == 0
+    return False if isinstance(expr, (float, Float)) else i % 2 == 0
 
 @EvenPredicate.register(Expr)
 def _(expr, assumptions):
@@ -261,7 +253,5 @@ def _(expr, assumptions):
     _integer = ask(Q.integer(expr), assumptions)
     if _integer:
         _even = ask(Q.even(expr), assumptions)
-        if _even is None:
-            return None
-        return not _even
+        return None if _even is None else not _even
     return _integer

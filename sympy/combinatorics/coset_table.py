@@ -101,8 +101,7 @@ class CosetTable(DefaultPrinting):
         return self_copy
 
     def __str__(self):
-        return "Coset Table on %s with %s as subgroup generators" \
-                % (self.fp_group, self.subgroup)
+        return f"Coset Table on {self.fp_group} with {self.subgroup} as subgroup generators"
 
     __repr__ = __str__
 
@@ -112,9 +111,7 @@ class CosetTable(DefaultPrinting):
         live cosets.
 
         """
-        if not self.table:
-            return 0
-        return max(self.omega) + 1
+        return max(self.omega) + 1 if self.table else 0
 
     # Pg. 152 [1]
     def is_complete(self):
@@ -124,7 +121,7 @@ class CosetTable(DefaultPrinting):
         `\alpha \in \Omega` and `x \in A`.
 
         """
-        return not any(None in self.table[coset] for coset in self.omega)
+        return all(None not in self.table[coset] for coset in self.omega)
 
     # Pg. 153 [1]
     def define(self, alpha, x, modified=False):
@@ -262,7 +259,7 @@ class CosetTable(DefaultPrinting):
         # behaves as a queue
         q = []
         self.merge(alpha, beta, q)
-        while len(q) > 0:
+        while q:
             gamma = q.pop(0)
             for x in A_dict:
                 delta = table[gamma][A_dict[x]]
@@ -562,7 +559,7 @@ class CosetTable(DefaultPrinting):
             self.modified_merge(alpha, beta, w, q)
         else:
             self.merge(alpha, beta, q)
-        while len(q) > 0:
+        while q:
             gamma = q.pop(0)
             for x in A_dict:
                 delta = table[gamma][A_dict[x]]
@@ -808,7 +805,7 @@ class CosetTable(DefaultPrinting):
         A_dict = self.A_dict
         A_dict_inv = self.A_dict_inv
         table = self.table
-        chi = tuple([i for i in range(len(self.p)) if self.p[i] != i])
+        chi = tuple(i for i in range(len(self.p)) if self.p[i] != i)
         for alpha in self.omega:
             gamma += 1
             if gamma != alpha:
@@ -1148,10 +1145,9 @@ def coset_enumeration_r(fp_grp, Y, max_cosets=None, draft=None,
                     # if alpha was eliminated during the scan then break
                     if p[alpha] < alpha:
                         break
-                if p[alpha] == alpha:
-                    for x in A_dict:
-                        if C.table[alpha][A_dict[x]] is None:
-                            _define(alpha, x)
+                for x in A_dict:
+                    if C.table[alpha][A_dict[x]] is None:
+                        _define(alpha, x)
             except ValueError as e:
                 if incomplete:
                     return C

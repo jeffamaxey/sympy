@@ -76,21 +76,17 @@ def euler_equations(L, funcs=(), vars=()):
     else:
         for f in funcs:
             if not isinstance(f, Function):
-                raise TypeError('Function expected, got: %s' % f)
+                raise TypeError(f'Function expected, got: {f}')
 
     vars = tuple(vars) if iterable(vars) else (vars,)
 
-    if not vars:
-        vars = funcs[0].args
-    else:
-        vars = tuple(sympify(var) for var in vars)
-
+    vars = tuple(sympify(var) for var in vars) if vars else funcs[0].args
     if not all(isinstance(v, Symbol) for v in vars):
-        raise TypeError('Variables are not symbols, got %s' % vars)
+        raise TypeError(f'Variables are not symbols, got {vars}')
 
     for f in funcs:
-        if not vars == f.args:
-            raise ValueError("Variables %s do not match args: %s" % (vars, f))
+        if vars != f.args:
+            raise ValueError(f"Variables {vars} do not match args: {f}")
 
     order = max([len(d.variables) for d in L.atoms(Derivative)
                         if d.expr in funcs] + [0])

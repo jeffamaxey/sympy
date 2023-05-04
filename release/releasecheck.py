@@ -9,7 +9,13 @@ def main(version, prevversion, outdir):
     run_stage(['mkdir', '-p', outdir])
     build_release_files('bdist_wheel', 'sympy-%s-py3-none-any.whl', outdir, version)
     build_release_files('sdist', 'sympy-%s.tar.gz', outdir, version)
-    run_stage(['release/compare_tar_against_git.py', join(outdir, 'sympy-%s.tar.gz' % (version,)), '.'])
+    run_stage(
+        [
+            'release/compare_tar_against_git.py',
+            join(outdir, f'sympy-{version}.tar.gz'),
+            '.',
+        ]
+    )
     run_stage(['release/build_docs.py', version, outdir])
     run_stage(['release/sha256.py', version, outdir])
     run_stage(['release/authors.py', version, prevversion, outdir])
@@ -30,7 +36,7 @@ def print_header(color, *msgs):
     print(color(vline + newlines))
 
 def run_stage(cmd):
-    cmdline = '    $ %s' % (' '.join(cmd),)
+    cmdline = f"    $ {' '.join(cmd)}"
 
     print_header(green, 'running:', cmdline)
     try:
@@ -55,7 +61,7 @@ def check_version(version, outdir):
     if version != checked_out_version:
         msg = "version %s does not match checkout %s"
         raise AssertionError(msg % (version, checked_out_version))
-    if basename(normpath(outdir)) != 'release-%s' % (version,):
+    if basename(normpath(outdir)) != f'release-{version}':
         msg = "version %s does not match output directory %s"
         raise AssertionError(msg % (version, outdir))
 

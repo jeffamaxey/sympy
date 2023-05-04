@@ -54,7 +54,7 @@ def _(expr, assumptions):
     """Objects are expected to be commutative unless otherwise stated"""
     assumps = conjuncts(assumptions)
     if expr.is_commutative is not None:
-        return expr.is_commutative and not ~Q.commutative(expr) in assumps
+        return expr.is_commutative and ~Q.commutative(expr) not in assumps
     if Q.commutative(expr) in assumps:
         return True
     elif ~Q.commutative(expr) in assumps:
@@ -63,10 +63,7 @@ def _(expr, assumptions):
 
 @CommutativePredicate.register(Basic)
 def _(expr, assumptions):
-    for arg in expr.args:
-        if not ask(Q.commutative(arg), assumptions):
-            return False
-    return True
+    return all(ask(Q.commutative(arg), assumptions) for arg in expr.args)
 
 @CommutativePredicate.register(Number)
 def _(expr, assumptions):
@@ -102,10 +99,7 @@ def _(expr, assumptions):
         # symbol used as abstract boolean object
         return None
     value = ask(arg, assumptions=assumptions)
-    if value in (True, False):
-        return not value
-    else:
-        return None
+    return not value if value in (True, False) else None
 
 @IsTruePredicate.register(Or)
 def _(expr, assumptions):
@@ -141,9 +135,7 @@ def _(expr, assumptions):
     if pt is None:
         return None
     qt = ask(q, assumptions=assumptions)
-    if qt is None:
-        return None
-    return pt == qt
+    return None if qt is None else pt == qt
 
 
 #### Helper methods

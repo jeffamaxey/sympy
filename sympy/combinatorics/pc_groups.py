@@ -30,7 +30,11 @@ class PolycyclicGroup(DefaultPrinting):
         self.pcgs = pc_sequence
         self.pc_series = pc_series
         self.relative_order = relative_order
-        self.collector = Collector(self.pcgs, pc_series, relative_order) if not collector else collector
+        self.collector = (
+            collector
+            if collector
+            else Collector(self.pcgs, pc_series, relative_order)
+        )
 
     def is_prime_order(self):
         return all(isprime(order) for order in self.relative_order)
@@ -75,7 +79,9 @@ class Collector(DefaultPrinting):
         self.pcgs = pcgs
         self.pc_series = pc_series
         self.relative_order = relative_order
-        self.free_group = free_group('x:{}'.format(len(pcgs)))[0] if not free_group_ else free_group_
+        self.free_group = (
+            free_group_ if free_group_ else free_group(f'x:{len(pcgs)}')[0]
+        )
         self.index = {s: i for i, s in enumerate(self.free_group.symbols)}
         self.pc_presentation = self.pc_relators()
 
@@ -223,9 +229,7 @@ class Collector(DefaultPrinting):
                 low = i
                 high = i+len(w)
                 break
-        if low == high == -1:
-            return -1, -1
-        return low, high
+        return (-1, -1) if low == high == -1 else (low, high)
 
     def map_relation(self, w):
         """
@@ -354,31 +358,31 @@ class Collector(DefaultPrinting):
                     sym, exp = presentation[0]
                     word_ = ((w[0][0], r), (sym, q*exp))
                     word_ = free_group.dtype(word_)
+                elif r == 0:
+                    word_ = None
                 else:
-                    if r != 0:
-                        word_ = ((w[0][0], r), )
-                        word_ = free_group.dtype(word_)
-                    else:
-                        word_ = None
+                    word_ = ((w[0][0], r), )
+                    word_ = free_group.dtype(word_)
                 word = word.eliminate_word(free_group.dtype(w), word_)
 
-            if len(w) == 2 and w[1][1] > 0:
-                s2, e2 = w[1]
-                s2 = ((s2, 1), )
-                s2 = free_group.dtype(s2)
-                word_ = self.map_relation(free_group.dtype(w))
-                word_ = s2*word_**e1
-                word_ = free_group.dtype(word_)
-                word = word.substituted_word(low, high, word_)
+            if len(w) == 2:
+                if w[1][1] > 0:
+                    s2, e2 = w[1]
+                    s2 = ((s2, 1), )
+                    s2 = free_group.dtype(s2)
+                    word_ = self.map_relation(free_group.dtype(w))
+                    word_ = s2*word_**e1
+                    word_ = free_group.dtype(word_)
+                    word = word.substituted_word(low, high, word_)
 
-            elif len(w) == 2 and w[1][1] < 0:
-                s2, e2 = w[1]
-                s2 = ((s2, 1), )
-                s2 = free_group.dtype(s2)
-                word_ = self.map_relation(free_group.dtype(w))
-                word_ = s2**-1*word_**e1
-                word_ = free_group.dtype(word_)
-                word = word.substituted_word(low, high, word_)
+                elif w[1][1] < 0:
+                    s2, e2 = w[1]
+                    s2 = ((s2, 1), )
+                    s2 = free_group.dtype(s2)
+                    word_ = self.map_relation(free_group.dtype(w))
+                    word_ = s2**-1*word_**e1
+                    word_ = free_group.dtype(word_)
+                    word = word.substituted_word(low, high, word_)
 
         return word
 
@@ -483,7 +487,7 @@ class Collector(DefaultPrinting):
 
             collected_gens.append(gen)
             if len(collected_gens) > 1:
-                conj = collected_gens[len(collected_gens)-1]
+                conj = collected_gens[-1]
                 conjugator = perm_to_free[conj]
 
                 for j in range(len(collected_gens)-1):
@@ -630,9 +634,7 @@ class Collector(DefaultPrinting):
         """
         exp_vector = self.exponent_vector(element)
         depth = self.depth(element)
-        if depth != len(self.pcgs)+1:
-            return exp_vector[depth-1]
-        return None
+        return exp_vector[depth-1] if depth != len(self.pcgs)+1 else None
 
     def _sift(self, z, g):
         h = g
@@ -704,6 +706,4 @@ class Collector(DefaultPrinting):
                 h = gen**(-f)*h
                 e[i] = f
                 d = self.depth(h)
-        if h == 1:
-            return e
-        return False
+        return e if h == 1 else False

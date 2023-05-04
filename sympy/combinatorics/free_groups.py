@@ -161,7 +161,7 @@ class FreeGroup(DefaultPrinting):
 
         return obj
 
-    def _generators(group):
+    def _generators(self):
         """Returns the generators of the FreeGroup.
 
         Examples
@@ -174,9 +174,9 @@ class FreeGroup(DefaultPrinting):
 
         """
         gens = []
-        for sym in group.symbols:
+        for sym in self.symbols:
             elm = ((sym, 1),)
-            gens.append(group.dtype(elm))
+            gens.append(self.dtype(elm))
         return tuple(gens)
 
     def clone(self, symbols=None):
@@ -184,10 +184,7 @@ class FreeGroup(DefaultPrinting):
 
     def __contains__(self, i):
         """Return True if ``i`` is contained in FreeGroup."""
-        if not isinstance(i, FreeGroupElement):
-            return False
-        group = i.group
-        return self == group
+        return self == i.group if isinstance(i, FreeGroupElement) else False
 
     def __hash__(self):
         return self._hash
@@ -197,11 +194,11 @@ class FreeGroup(DefaultPrinting):
 
     def __str__(self):
         if self.rank > 30:
-            str_form = "<free group with %s generators>" % self.rank
+            str_form = f"<free group with {self.rank} generators>"
         else:
             str_form = "<free group on the generators "
             gens = self.generators
-            str_form += str(gens) + ">"
+            str_form += f"{str(gens)}>"
         return str_form
 
     __repr__ = __str__
@@ -232,7 +229,7 @@ class FreeGroup(DefaultPrinting):
         if isinstance(gen, self.dtype):
             return self.generators.index(gen)
         else:
-            raise ValueError("expected a generator of Free Group %s, got %s" % (self, gen))
+            raise ValueError(f"expected a generator of Free Group {self}, got {gen}")
 
     def order(self):
         """Return the order of the free group.
@@ -249,10 +246,7 @@ class FreeGroup(DefaultPrinting):
         1
 
         """
-        if self.rank == 0:
-            return S.One
-        else:
-            return S.Infinity
+        return S.One if self.rank == 0 else S.Infinity
 
     @property
     def elements(self):
@@ -322,12 +316,7 @@ class FreeGroup(DefaultPrinting):
         True
 
         """
-        if not isinstance(g, FreeGroupElement):
-            return False
-        elif self != g.group:
-            return False
-        else:
-            return True
+        return isinstance(g, FreeGroupElement) and self == g.group
 
     def center(self):
         """Returns the center of the free group `self`."""
@@ -363,10 +352,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
 
     @property
     def is_identity(self):
-        if self.array_form == tuple():
-            return True
-        else:
-            return False
+        return self.array_form == tuple()
 
     @property
     def array_form(self):
@@ -434,10 +420,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
     def __getitem__(self, i):
         group = self.group
         r = self.letter_form[i]
-        if r.is_Symbol:
-            return group.dtype(((r, 1),))
-        else:
-            return group.dtype(((-r, -1),))
+        return group.dtype(((r, 1),)) if r.is_Symbol else group.dtype(((-r, -1),))
 
     def index(self, gen):
         if len(gen) != 1:
@@ -460,7 +443,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         return tuple(flatten(self.array_form))
 
     def __contains__(self, gen):
-        return gen.array_form[0][0] in tuple([r[0] for r in self.array_form])
+        return gen.array_form[0][0] in tuple(r[0] for r in self.array_form)
 
     def __str__(self):
         if self.is_identity:
@@ -470,25 +453,25 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         array_form = self.array_form
         for i in range(len(array_form)):
             if i == len(array_form) - 1:
-                if array_form[i][1] == 1:
-                    str_form += str(array_form[i][0])
-                else:
-                    str_form += str(array_form[i][0]) + \
-                                    "**" + str(array_form[i][1])
+                str_form += (
+                    str(array_form[i][0])
+                    if array_form[i][1] == 1
+                    else f"{str(array_form[i][0])}**{str(array_form[i][1])}"
+                )
             else:
-                if array_form[i][1] == 1:
-                    str_form += str(array_form[i][0]) + "*"
-                else:
-                    str_form += str(array_form[i][0]) + \
-                                    "**" + str(array_form[i][1]) + "*"
+                str_form += (
+                    f"{str(array_form[i][0])}*"
+                    if array_form[i][1] == 1
+                    else f"{str(array_form[i][0])}**{str(array_form[i][1])}*"
+                )
         return str_form
 
     __repr__ = __str__
 
     def __pow__(self, n):
         n = as_int(n)
-        group = self.group
         if n == 0:
+            group = self.group
             return group.identity
 
         if n < 0:
@@ -496,7 +479,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
             return (self.inverse())**n
 
         result = self
-        for i in range(n - 1):
+        for _ in range(n - 1):
             result = result*self
         # this method can be improved instead of just returning the
         # multiplication of elements
@@ -563,7 +546,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
 
         """
         group = self.group
-        r = tuple([(i, -j) for i, j in self.array_form[::-1]])
+        r = tuple((i, -j) for i, j in self.array_form[::-1])
         return group.dtype(r)
 
     def order(self):
@@ -578,10 +561,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         1
 
         """
-        if self.is_identity:
-            return S.One
-        else:
-            return S.Infinity
+        return S.One if self.is_identity else S.Infinity
 
     def commutator(self, other):
         """
@@ -731,9 +711,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
 
         """
         group = self.group
-        if not isinstance(other, group.dtype):
-            return False
-        return tuple.__eq__(self, other)
+        return tuple.__eq__(self, other) if isinstance(other, group.dtype) else False
 
     def __lt__(self, other):
         """
@@ -764,22 +742,16 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         l = len(self)
         m = len(other)
         # implement lenlex order
-        if l < m:
-            return True
-        elif l > m:
-            return False
+        if l != m:
+            return l < m
         for i in range(l):
             a = self[i].array_form[0]
             b = other[i].array_form[0]
             p = group.symbols.index(a[0])
             q = group.symbols.index(b[0])
-            if p < q:
+            if p < q or p <= q and a[1] < b[1]:
                 return True
-            elif p > q:
-                return False
-            elif a[1] < b[1]:
-                return True
-            elif a[1] > b[1]:
+            elif p > q or a[1] > b[1]:
                 return False
         return False
 
@@ -841,7 +813,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         if len(gen) != 1:
             raise ValueError("gen must be a generator or inverse of a generator")
         s = gen.array_form[0]
-        return s[1]*sum([i[1] for i in self.array_form if i[0] == s[0]])
+        return s[1] * sum(i[1] for i in self.array_form if i[0] == s[0])
 
     def generator_count(self, gen):
         """
@@ -870,7 +842,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         if len(gen) != 1 or gen.array_form[0][1] < 0:
             raise ValueError("gen must be a generator")
         s = gen.array_form[0]
-        return s[1]*sum([abs(i[1]) for i in self.array_form if i[0] == s[0]])
+        return s[1] * sum(abs(i[1]) for i in self.array_form if i[0] == s[0])
 
     def subword(self, from_i, to_j, strict=True):
         """
@@ -897,10 +869,9 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
                     "the length of associative word")
         if to_j <= from_i:
             return group.identity
-        else:
-            letter_form = self.letter_form[from_i: to_j]
-            array_form = letter_form_to_array_form(letter_form, group)
-            return group.dtype(array_form)
+        letter_form = self.letter_form[from_i: to_j]
+        array_form = letter_form_to_array_form(letter_form, group)
+        return group.dtype(array_form)
 
     def subword_index(self, word, start = 0):
         '''
@@ -919,11 +890,14 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         l = len(word)
         self_lf = self.letter_form
         word_lf = word.letter_form
-        index = None
-        for i in range(start,len(self_lf)-l+1):
-            if self_lf[i:i+l] == word_lf:
-                index = i
-                break
+        index = next(
+            (
+                i
+                for i in range(start, len(self_lf) - l + 1)
+                if self_lf[i : i + l] == word_lf
+            ),
+            None,
+        )
         if index is not None:
             return index
         else:
@@ -985,17 +959,15 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
 
         """
         group = self.group
-        gens = set()
-        for syllable in self.array_form:
-            gens.add(group.dtype(((syllable[0], 1),)))
+        gens = {group.dtype(((syllable[0], 1),)) for syllable in self.array_form}
         return set(gens)
 
     def cyclic_subword(self, from_i, to_j):
         group = self.group
         l = len(self)
         letter_form = self.letter_form
-        period1 = int(from_i/l)
         if from_i >= l:
+            period1 = int(from_i/l)
             from_i -= l*period1
             to_j -= l*period1
         diff = to_j - from_i
@@ -1056,10 +1028,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         letter2 = w2.letter_form
         str1 = ' '.join(map(str, letter1))
         str2 = ' '.join(map(str, letter2))
-        if len(str1) != len(str2):
-            return False
-
-        return str1 in str2 + ' ' + str2
+        return False if len(str1) != len(str2) else str1 in f'{str2} {str2}'
 
     def number_syllables(self):
         """Returns the number of syllables of the associative word `self`.
@@ -1133,9 +1102,8 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         group = self.group
         if to_j <= from_i:
             return group.identity
-        else:
-            r = tuple(self.array_form[from_i: to_j])
-            return group.dtype(r)
+        r = tuple(self.array_form[from_i: to_j])
+        return group.dtype(r)
 
     def substituted_word(self, from_i, to_j, by):
         """
@@ -1186,9 +1154,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         True
 
         """
-        if not self:
-            return True
-        return self[0] != self[-1]**-1
+        return self[0] != self[-1]**-1 if self else True
 
     def identity_cyclic_reduction(self):
         """Return a unique cyclically reduced version of the word.
@@ -1257,9 +1223,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
             end = word[-1]**abs(exp)
             word = start**-1*word*end**-1
             g = g*start
-        if removed:
-            return word, g
-        return word
+        return (word, g) if removed else word
 
     def power_of(self, other):
         '''
@@ -1292,10 +1256,7 @@ class FreeGroupElement(CantSympify, DefaultPrinting, tuple):
         reduced, r1 = self.cyclic_reduction(removed=True)
         if not r1.is_identity:
             other, r2 = other.cyclic_reduction(removed=True)
-            if r1 == r2:
-                return reduced.power_of(other)
-            return False
-
+            return reduced.power_of(other) if r1 == r2 else False
         if len(self) < l or len(self) % l:
             return False
 
@@ -1326,11 +1287,10 @@ def letter_form_to_array_form(array_form, group):
                     new_array.append((-a[i], -n))
                 else:
                     new_array.append((a[i], n))
+            elif (-a[i]) in symbols:
+                new_array.append((-a[i], -1))
             else:
-                if (-a[i]) in symbols:
-                    new_array.append((-a[i], -1))
-                else:
-                    new_array.append((a[i], 1))
+                new_array.append((a[i], 1))
             return new_array
         elif a[i] == a[i + 1]:
             n += 1

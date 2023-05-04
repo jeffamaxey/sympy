@@ -56,8 +56,9 @@ class Subset():
                              'superset must be larger than the subset.')
         for elem in subset:
             if elem not in superset:
-                raise ValueError('The superset provided is invalid as it does '
-                                 'not contain the element {}'.format(elem))
+                raise ValueError(
+                    f'The superset provided is invalid as it does not contain the element {elem}'
+                )
         obj = object.__new__(cls)
         obj._subset = subset
         obj._superset = superset
@@ -68,9 +69,11 @@ class Subset():
         whether both objects are of the class Subset and if the values
         of the subset and superset attributes are the same.
         """
-        if not isinstance(other, Subset):
-            return NotImplemented
-        return self.subset == other.subset and self.superset == other.superset
+        return (
+            self.subset == other.subset and self.superset == other.superset
+            if isinstance(other, Subset)
+            else NotImplemented
+        )
 
     def iterate_binary(self, k):
         """
@@ -182,10 +185,8 @@ class Subset():
                 i = i - 1
             indices.append(i + 1)
 
-        ret_set = []
         super_set = self.superset
-        for i in indices:
-            ret_set.append(super_set[i])
+        ret_set = [super_set[i] for i in indices]
         return Subset(ret_set, super_set)
 
     def prev_lexicographic(self):
@@ -222,10 +223,8 @@ class Subset():
                 indices.append(i - 1)
             indices.append(self.superset_size - 1)
 
-        ret_set = []
         super_set = self.superset
-        for i in indices:
-            ret_set.append(super_set[i])
+        ret_set = [super_set[i] for i in indices]
         return Subset(ret_set, super_set)
 
     def iterate_graycode(self, k):
@@ -473,7 +472,7 @@ class Subset():
         return 2**(self.superset_size)
 
     @classmethod
-    def subset_from_bitlist(self, super_set, bitlist):
+    def subset_from_bitlist(cls, super_set, bitlist):
         """
         Gets the subset defined by the bitlist.
 
@@ -491,14 +490,11 @@ class Subset():
         """
         if len(super_set) != len(bitlist):
             raise ValueError("The sizes of the lists are not equal")
-        ret_set = []
-        for i in range(len(bitlist)):
-            if bitlist[i] == '1':
-                ret_set.append(super_set[i])
+        ret_set = [super_set[i] for i in range(len(bitlist)) if bitlist[i] == '1']
         return Subset(ret_set, super_set)
 
     @classmethod
-    def bitlist_from_subset(self, subset, superset):
+    def bitlist_from_subset(cls, subset, superset):
         """
         Gets the bitlist corresponding to a subset.
 
@@ -522,7 +518,7 @@ class Subset():
         return ''.join(bitlist)
 
     @classmethod
-    def unrank_binary(self, rank, superset):
+    def unrank_binary(cls, rank, superset):
         """
         Gets the binary ordered subset of the specified rank.
 
@@ -542,7 +538,7 @@ class Subset():
         return Subset.subset_from_bitlist(superset, bits)
 
     @classmethod
-    def unrank_gray(self, rank, superset):
+    def unrank_gray(cls, rank, superset):
         """
         Gets the Gray code ordered subset of the specified rank.
 
@@ -564,7 +560,7 @@ class Subset():
         return Subset.subset_from_bitlist(superset, graycode_bitlist)
 
     @classmethod
-    def subset_indices(self, subset, superset):
+    def subset_indices(cls, subset, superset):
         """Return indices of subset in superset in a list; the list is empty
         if all elements of ``subset`` are not in ``superset``.
 
@@ -591,7 +587,7 @@ class Subset():
                 if not sb:
                     break
         else:
-            return list()
+            return []
         return [d[bi] for bi in b]
 
 

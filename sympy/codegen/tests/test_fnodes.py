@@ -201,13 +201,20 @@ def test_bind_C():
     f_mod = render_as_module([fd], 'mod_rms')
 
     with tempfile.TemporaryDirectory() as folder:
-        mod, info = compile_link_import_strings([
-            ('rms.f90', f_mod),
-            ('_rms.pyx', (
-                "#cython: language_level={}\n".format("3") +
-                "cdef extern double rms(double*, int*)\n"
-                "def py_rms(double[::1] x):\n"
-                "    cdef int s = x.size\n"
-                "    return rms(&x[0], &s)\n"))
-        ], build_dir=folder)
+        mod, info = compile_link_import_strings(
+            [
+                ('rms.f90', f_mod),
+                (
+                    '_rms.pyx',
+                    (
+                        f"#cython: language_level=3\n"
+                        + "cdef extern double rms(double*, int*)\n"
+                        "def py_rms(double[::1] x):\n"
+                        "    cdef int s = x.size\n"
+                        "    return rms(&x[0], &s)\n"
+                    ),
+                ),
+            ],
+            build_dir=folder,
+        )
         assert abs(mod.py_rms(np.array([2., 4., 2., 2.])) - 7**0.5) < 1e-14

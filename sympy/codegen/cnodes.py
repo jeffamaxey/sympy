@@ -64,10 +64,7 @@ class Label(Node):
 
     @classmethod
     def _construct_body(cls, itr):
-        if isinstance(itr, CodeBlock):
-            return itr
-        else:
-            return CodeBlock(*itr)
+        return itr if isinstance(itr, CodeBlock) else CodeBlock(*itr)
 
 
 class goto(Token):

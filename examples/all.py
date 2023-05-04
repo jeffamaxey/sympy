@@ -90,7 +90,7 @@ def load_example_module(example):
     from importlib import import_module
 
     exmod = os.path.split(EXAMPLE_DIR)[1]
-    modname = exmod + '.' + example
+    modname = f'{exmod}.{example}'
     return import_module(modname)
 
 
@@ -123,7 +123,7 @@ def run_examples(*, windowed=False, quiet=False, summary=True):
     if summary:
         show_summary(successes, failures, reporter=reporter)
 
-    return len(failures) == 0
+    return not failures
 
 
 def run_example(example, *, reporter=None):

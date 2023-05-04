@@ -195,21 +195,17 @@ def update_authors_file(lines, old_lines, update_yesno):
         for i in sorted(new_authors, key=lambda x: x.lower()):
             print('\t%s' % i)
 
-    if new_authors and update_yesno:
-        return 1
-    else:
-        return 0
+    return 1 if new_authors and update_yesno else 0
 
 
 def check_git_version():
     # check git version
     minimal = '1.8.4.2'
     git_ver = run(['git', '--version'], stdout=PIPE, encoding='utf-8').stdout[12:]
-    if version_tuple(git_ver) < version_tuple(minimal):
-        print(yellow("Please use a git version >= %s" % minimal))
-        return False
-    else:
+    if version_tuple(git_ver) >= version_tuple(minimal):
         return True
+    print(yellow(f"Please use a git version >= {minimal}"))
+    return False
 
 
 def authors_path():

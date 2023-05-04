@@ -57,4 +57,4 @@ class StateMachine:
         self.states[state_name] = new_state
 
     def __repr__(self):
-        return "%s" % (self.name)
+        return f"{self.name}"

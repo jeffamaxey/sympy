@@ -113,6 +113,5 @@ if __name__ == '__main__':
 
     print("The generated coverage report is in covhtml directory.")
     print(
-        "Open %s in your web browser to view the report" %
-        os.sep.join([report_dir, 'index.html'])
+        f"Open {os.sep.join([report_dir, 'index.html'])} in your web browser to view the report"
     )

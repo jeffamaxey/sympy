@@ -22,11 +22,7 @@ class Reader:
            String with lines separated by '\n'.
 
         """
-        if isinstance(data, list):
-            self._str = data
-        else:
-            self._str = data.split('\n')  # store string as list of lines
-
+        self._str = data if isinstance(data, list) else data.split('\n')
         self.reset()
 
     def __getitem__(self, n):
@@ -36,12 +32,11 @@ class Reader:
         self._l = 0  # current line nr
 
     def read(self):
-        if not self.eof():
-            out = self[self._l]
-            self._l += 1
-            return out
-        else:
+        if self.eof():
             return ''
+        out = self[self._l]
+        self._l += 1
+        return out
 
     def seek_next_non_empty_line(self):
         for l in self[self._l:]:
@@ -77,10 +72,7 @@ class Reader:
         return self.read_to_condition(is_unindented)
 
     def peek(self, n=0):
-        if self._l + n < len(self._str):
-            return self[self._l + n]
-        else:
-            return ''
+        return self[self._l + n] if self._l + n < len(self._str) else ''
 
     def is_empty(self):
         return not ''.join(self._str).strip()
@@ -214,18 +206,15 @@ class NumpyDocString(Mapping):
             m = self._name_rgx.match(text)
             if m:
                 g = m.groups()
-                if g[1] is None:
-                    return g[3], None
-                else:
-                    return g[2], g[1]
-            raise ValueError("%s is not an item name" % text)
+                return (g[3], None) if g[1] is None else (g[2], g[1])
+            raise ValueError(f"{text} is not an item name")
 
         def push_item(name, rest):
             if not name:
                 return
             name, role = parse_item_name(name)
             if '.' not in name:
-                name = '~.' + name
+                name = f'~.{name}'
             items.append((name, list(rest), role))
             del rest[:]
 
@@ -332,10 +321,7 @@ class NumpyDocString(Mapping):
         return [name, len(name)*symbol]
 
     def _str_indent(self, doc, indent=4):
-        out = []
-        for line in doc:
-            out += [' '*indent + line]
-        return out
+        return [' '*indent + line for line in doc]
 
     def _str_signature(self):
         if self['Signature']:
@@ -344,26 +330,17 @@ class NumpyDocString(Mapping):
             return ['']
 
     def _str_summary(self):
-        if self['Summary']:
-            return self['Summary'] + ['']
-        else:
-            return []
+        return self['Summary'] + [''] if self['Summary'] else []
 
     def _str_extended_summary(self):
-        if self['Extended Summary']:
-            return self['Extended Summary'] + ['']
-        else:
-            return []
+        return self['Extended Summary'] + [''] if self['Extended Summary'] else []
 
     def _str_param_list(self, name):
         out = []
         if self[name]:
             out += self._str_header(name)
             for param, param_type, desc in self[name]:
-                if param_type:
-                    out += ['{} : {}'.format(param, param_type)]
-                else:
-                    out += [param]
+                out += [f'{param} : {param_type}'] if param_type else [param]
                 out += self._str_indent(desc)
             out += ['']
         return out
@@ -384,16 +361,16 @@ class NumpyDocString(Mapping):
         last_had_desc = True
         for func, desc, role in self['See Also']:
             if role:
-                link = ':{}:`{}`'.format(role, func)
+                link = f':{role}:`{func}`'
             elif func_role:
-                link = ':{}:`{}`'.format(func_role, func)
+                link = f':{func_role}:`{func}`'
             else:
-                link = "`%s`_" % func
+                link = f"`{func}`_"
             if desc or last_had_desc:
                 out += ['']
                 out += [link]
             else:
-                out[-1] += ", %s" % link
+                out[-1] += f", {link}"
             if desc:
                 out += self._str_indent([' '.join(desc)])
                 last_had_desc = True
@@ -405,11 +382,11 @@ class NumpyDocString(Mapping):
     def _str_index(self):
         idx = self['index']
         out = []
-        out += ['.. index:: %s' % idx.get('default', '')]
+        out += [f".. index:: {idx.get('default', '')}"]
         for section, references in idx.items():
             if section == 'default':
                 continue
-            out += ['   :{}: {}'.format(section, ', '.join(references))]
+            out += [f"   :{section}: {', '.join(references)}"]
         return out
 
     def __str__(self, func_role=''):
@@ -464,9 +441,9 @@ class FunctionDoc(NumpyDocString):
                 # try to read signature
                 argspec = str(inspect.signature(func))
                 argspec = argspec.replace('*', r'\*')
-                signature = '{}{}'.format(func_name, argspec)
+                signature = f'{func_name}{argspec}'
             except TypeError as e:
-                signature = '%s()' % func_name
+                signature = f'{func_name}()'
             self['Signature'] = signature
 
     def get_func(self):
@@ -488,9 +465,8 @@ class FunctionDoc(NumpyDocString):
 
         if self._role:
             if self._role not in roles:
-                print("Warning: invalid role %s" % self._role)
-            out += '.. {}:: {}\n    \n\n'.format(roles.get(self._role, ''),
-                                             func_name)
+                print(f"Warning: invalid role {self._role}")
+            out += f".. {roles.get(self._role, '')}:: {func_name}\n    \n\n"
 
         out += super().__str__(func_role=self._role)
         return out
@@ -522,10 +498,7 @@ class ClassDoc(NumpyDocString):
 
         if config.get('show_class_members', True):
             def splitlines_x(s):
-                if not s:
-                    return []
-                else:
-                    return s.splitlines()
+                return s.splitlines() if s else []
 
             for field, items in [('Methods', self.methods),
                                  ('Attributes', self.properties)]:

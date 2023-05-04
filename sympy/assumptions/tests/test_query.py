@@ -1954,10 +1954,16 @@ def test_matrix():
     assert ask(Q.hermitian(Matrix([[2, 2 + I, 4], [2 - I, 3, I], [4, -I, 1]]))) == True
     assert ask(Q.hermitian(Matrix([[2, 2 + I, 4], [2 + I, 3, I], [4, -I, 1]]))) == False
     z = symbols('z', complex=True)
-    assert ask(Q.hermitian(Matrix([[2, 2 + I, z], [2 - I, 3, I], [4, -I, 1]]))) == None
+    assert (
+        ask(Q.hermitian(Matrix([[2, 2 + I, z], [2 - I, 3, I], [4, -I, 1]])))
+        is None
+    )
     assert ask(Q.hermitian(SparseMatrix(((25, 15, -5), (15, 18, 0), (-5, 0, 11))))) == True
     assert ask(Q.hermitian(SparseMatrix(((25, 15, -5), (15, I, 0), (-5, 0, 11))))) == False
-    assert ask(Q.hermitian(SparseMatrix(((25, 15, -5), (15, z, 0), (-5, 0, 11))))) == None
+    assert (
+        ask(Q.hermitian(SparseMatrix(((25, 15, -5), (15, z, 0), (-5, 0, 11)))))
+        is None
+    )
 
     # antihermitian
     A = Matrix([[0, -2 - I, 0], [2 - I, 0, -I], [0, -I, 0]])
@@ -2162,9 +2168,13 @@ def test_known_facts_consistent():
     fact = get_known_facts(x)
     # test cnf clauses of fact between unary predicates
     cnf = CNF.to_CNF(fact)
-    clauses = set()
-    for cl in cnf.clauses:
-        clauses.add(frozenset(Literal(lit.arg.function, lit.is_Not) for lit in sorted(cl, key=str)))
+    clauses = {
+        frozenset(
+            Literal(lit.arg.function, lit.is_Not)
+            for lit in sorted(cl, key=str)
+        )
+        for cl in cnf.clauses
+    }
     assert get_all_known_facts() == clauses
     # test dictionary of fact between unary predicates
     keys = [pred(x) for pred in get_known_facts_keys()]
@@ -2363,6 +2373,7 @@ def test_custom_AskHandler():
 
 def test_polyadic_predicate():
 
+
     class SexyPredicate(Predicate):
         pass
     try:
@@ -2371,16 +2382,20 @@ def test_polyadic_predicate():
         @Q.sexyprime.register(Integer, Integer)
         def _(int1, int2, assumptions):
             args = sorted([int1, int2])
-            if not all(ask(Q.prime(a), assumptions) for a in args):
-                return False
-            return args[1] - args[0] == 6
+            return (
+                args[1] - args[0] == 6
+                if all(ask(Q.prime(a), assumptions) for a in args)
+                else False
+            )
 
         @Q.sexyprime.register(Integer, Integer, Integer)
         def _(int1, int2, int3, assumptions):
             args = sorted([int1, int2, int3])
-            if not all(ask(Q.prime(a), assumptions) for a in args):
-                return False
-            return args[2] - args[1] == 6 and args[1] - args[0] == 6
+            return (
+                args[2] - args[1] == 6 and args[1] - args[0] == 6
+                if all(ask(Q.prime(a), assumptions) for a in args)
+                else False
+            )
 
         assert ask(Q.sexyprime(5, 11))
         assert ask(Q.sexyprime(7, 13, 19))

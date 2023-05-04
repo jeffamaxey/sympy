@@ -194,19 +194,16 @@ class Token(CodegenAST):
     @classmethod
     def _get_constructor(cls, attr):
         """ Get the constructor function for an attribute by name. """
-        return getattr(cls, '_construct_%s' % attr, lambda x: x)
+        return getattr(cls, f'_construct_{attr}', lambda x: x)
 
     @classmethod
     def _construct(cls, attr, arg):
         """ Construct an attribute value from argument passed to ``__new__()``. """
         # arg may be ``NoneToken()``, so comparation is done using == instead of ``is`` operator
-        if arg == None:
+        if arg is None:
             return cls.defaults.get(attr, none)
         else:
-            if isinstance(arg, Dummy):  # SymPy's replace uses Dummy instances
-                return arg
-            else:
-                return cls._get_constructor(attr)(arg)
+            return arg if isinstance(arg, Dummy) else cls._get_constructor(attr)(arg)
 
     def __new__(cls, *args, **kwargs):
         # Pass through existing instances when given as sole argument
@@ -239,7 +236,7 @@ class Token(CodegenAST):
             attrvals.append(cls._construct(attrname, argval))
 
         if kwargs:
-            raise ValueError("Unknown keyword arguments: %s" % ' '.join(kwargs))
+            raise ValueError(f"Unknown keyword arguments: {' '.join(kwargs)}")
 
         # Parent constructor
         basic_args = [
@@ -255,15 +252,17 @@ class Token(CodegenAST):
         return obj
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        for attr in self._fields:
-            if getattr(self, attr) != getattr(other, attr):
-                return False
-        return True
+        return (
+            all(
+                getattr(self, attr) == getattr(other, attr)
+                for attr in self._fields
+            )
+            if isinstance(other, self.__class__)
+            else False
+        )
 
     def _hashable_content(self):
-        return tuple([getattr(self, attr) for attr in self._fields])
+        return tuple(getattr(self, attr) for attr in self._fields)
 
     def __hash__(self):
         return super().__hash__()
@@ -309,7 +308,7 @@ class Token(CodegenAST):
                 indented = self._indented(printer, attr, value, *args, **kwargs)
             arg_reprs.append(('{1}' if i == 0 else '{0}={1}').format(attr, indented.lstrip()))
 
-        return "{}({})".format(self.__class__.__name__, joiner.join(arg_reprs))
+        return f"{self.__class__.__name__}({joiner.join(arg_reprs)})"
 
     _sympystr = _sympyrepr
 
@@ -330,10 +329,7 @@ class Token(CodegenAST):
             Function to apply to all values.
         """
         kwargs = {k: getattr(self, k) for k in self._fields if k not in exclude}
-        if apply is not None:
-            return {k: apply(v) for k, v in kwargs.items()}
-        else:
-            return kwargs
+        return kwargs if apply is None else {k: apply(v) for k, v in kwargs.items()}
 
 class BreakToken(Token):
     """ Represents 'break' in C/Python ('exit' in Fortran).
@@ -438,7 +434,7 @@ class AssignmentBase(CodegenAST):
         # Tuple of things that can be on the lhs of an assignment
         assignable = (Symbol, MatrixSymbol, MatrixElement, Indexed, Element, Variable)
         if not isinstance(lhs, assignable):
-            raise TypeError("Cannot assign to lhs of type %s." % type(lhs))
+            raise TypeError(f"Cannot assign to lhs of type {type(lhs)}.")
 
         # Indexed types implement shape, but don't define it until later. This
         # causes issues in assignment validation. For now, matrices are defined
@@ -452,7 +448,7 @@ class AssignmentBase(CodegenAST):
                 raise ValueError("Cannot assign a scalar to a matrix.")
             elif lhs.shape != rhs.shape:
                 raise ValueError("Dimensions of lhs and rhs do not align.")
-        elif rhs_is_mat and not lhs_is_mat:
+        elif rhs_is_mat:
             raise ValueError("Cannot assign a matrix to a scalar.")
 
 
@@ -511,7 +507,7 @@ class AugmentedAssignment(AssignmentBase):
 
     @property
     def op(self):
-        return self.binop + '='
+        return f'{self.binop}='
 
 
 class AddAugmentedAssignment(AugmentedAssignment):
@@ -582,7 +578,7 @@ def aug_assign(lhs, op, rhs):
     AddAugmentedAssignment(x, y)
     """
     if op not in augassign_classes:
-        raise ValueError("Unrecognized operator %s" % op)
+        raise ValueError(f"Unrecognized operator {op}")
     return augassign_classes[op](lhs, rhs)
 
 
@@ -649,8 +645,17 @@ class CodeBlock(CodegenAST):
         il = printer._context.get('indent_level', 0)
         joiner = ',\n' + ' '*il
         joined = joiner.join(map(printer._print, self.args))
-        return ('{}(\n'.format(' '*(il-4) + self.__class__.__name__,) +
-                ' '*il + joined + '\n' + ' '*(il - 4) + ')')
+        return (
+            (
+                (
+                    (f"{' ' * (il - 4) + self.__class__.__name__}(\n" + ' ' * il)
+                    + joined
+                )
+                + '\n'
+            )
+            + ' ' * (il - 4)
+            + ')'
+        )
 
     _sympystr = _sympyrepr
 
@@ -734,9 +739,7 @@ class CodeBlock(CodegenAST):
         for dst_node in A:
             i, a = dst_node
             for s in a.rhs.free_symbols:
-                for src_node in var_map[s]:
-                    E.append((src_node, dst_node))
-
+                E.extend((src_node, dst_node) for src_node in var_map[s])
         ordered_assignments = topological_sort([A, E])
 
         # De-enumerate the result
@@ -854,10 +857,7 @@ class For(Token):
 
     @classmethod
     def _construct_body(cls, itr):
-        if isinstance(itr, CodeBlock):
-            return itr
-        else:
-            return CodeBlock(*itr)
+        return itr if isinstance(itr, CodeBlock) else CodeBlock(*itr)
 
     @classmethod
     def _construct_iterable(cls, itr):
@@ -1544,7 +1544,7 @@ class Variable(Node):
         try:
             rhs = _sympify(rhs)
         except SympifyError:
-            raise TypeError("Invalid comparison %s < %s" % (self, rhs))
+            raise TypeError(f"Invalid comparison {self} < {rhs}")
         return op(self, rhs, evaluate=False)
 
     __lt__ = lambda self, other: self._relation(other, Lt)
@@ -1663,10 +1663,7 @@ class While(Token):
 
     @classmethod
     def _construct_body(cls, itr):
-        if isinstance(itr, CodeBlock):
-            return itr
-        else:
-            return CodeBlock(*itr)
+        return itr if isinstance(itr, CodeBlock) else CodeBlock(*itr)
 
 
 class Scope(Token):
@@ -1683,10 +1680,7 @@ class Scope(Token):
 
     @classmethod
     def _construct_body(cls, itr):
-        if isinstance(itr, CodeBlock):
-            return itr
-        else:
-            return CodeBlock(*itr)
+        return itr if isinstance(itr, CodeBlock) else CodeBlock(*itr)
 
 
 class Stream(Token):
@@ -1829,10 +1823,7 @@ class FunctionDefinition(FunctionPrototype):
 
     @classmethod
     def _construct_body(cls, itr):
-        if isinstance(itr, CodeBlock):
-            return itr
-        else:
-            return CodeBlock(*itr)
+        return itr if isinstance(itr, CodeBlock) else CodeBlock(*itr)
 
     @classmethod
     def from_FunctionPrototype(cls, func_proto, body):

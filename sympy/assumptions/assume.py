@@ -71,9 +71,11 @@ class AssumptionsContext(set):
             super().add(a)
 
     def _sympystr(self, printer):
-        if not self:
-            return "%s()" % self.__class__.__name__
-        return "{}({})".format(self.__class__.__name__, printer._print_set(self))
+        return (
+            f"{self.__class__.__name__}({printer._print_set(self)})"
+            if self
+            else f"{self.__class__.__name__}()"
+        )
 
 global_assumptions = AssumptionsContext()
 
@@ -111,7 +113,7 @@ class AppliedPredicate(Boolean):
 
     def __new__(cls, predicate, *args):
         if not isinstance(predicate, Predicate):
-            raise TypeError("%s is not a Predicate." % predicate)
+            raise TypeError(f"{predicate} is not a Predicate.")
         args = map(_sympify, args)
         return super().__new__(cls, predicate, *args)
 
@@ -163,12 +165,13 @@ class AppliedPredicate(Boolean):
             i = self.arguments[0]
             if i.is_Boolean or i.is_Symbol:
                 return i.binary_symbols
-        if self.function in (Q.eq, Q.ne):
-            if true in self.arguments or false in self.arguments:
-                if self.arguments[0].is_Symbol:
-                    return {self.arguments[0]}
-                elif self.arguments[1].is_Symbol:
-                    return {self.arguments[1]}
+        if self.function in (Q.eq, Q.ne) and (
+            true in self.arguments or false in self.arguments
+        ):
+            if self.arguments[0].is_Symbol:
+                return {self.arguments[0]}
+            elif self.arguments[1].is_Symbol:
+                return {self.arguments[1]}
         return set()
 
 
@@ -177,7 +180,7 @@ class PredicateMeta(ManagedProperties):
         # If handler is not defined, assign empty dispatcher.
         if "handler" not in dct:
             name = f"Ask{clsname.capitalize()}Handler"
-            handler = Dispatcher(name, doc="Handler for key %s" % name)
+            handler = Dispatcher(name, doc=f"Handler for key {name}")
             dct["handler"] = handler
 
         dct["_orig_doc"] = dct.get("__doc__", "")
@@ -193,20 +196,15 @@ class PredicateMeta(ManagedProperties):
             doc += "    =======\n\n"
 
             # Append the handler's doc without breaking sphinx documentation.
-            docs = ["    Multiply dispatched method: %s" % handler.name]
+            docs = [f"    Multiply dispatched method: {handler.name}"]
             if handler.doc:
-                for line in handler.doc.splitlines():
-                    if not line:
-                        continue
-                    docs.append("    %s" % line)
+                docs.extend(f"    {line}" for line in handler.doc.splitlines() if line)
             other = []
             for sig in handler.ordering[::-1]:
                 func = handler.funcs[sig]
                 if func.__doc__:
-                    s = '    Inputs: <%s>' % str_signature(sig)
-                    lines = []
-                    for line in func.__doc__.splitlines():
-                        lines.append("    %s" % line)
+                    s = f'    Inputs: <{str_signature(sig)}>'
+                    lines = [f"    {line}" for line in func.__doc__.splitlines()]
                     s += "\n".join(lines)
                     docs.append(s)
                 else:
@@ -306,8 +304,7 @@ class Predicate(Boolean, metaclass=PredicateMeta):
     def __new__(cls, *args, **kwargs):
         if cls is Predicate:
             return UndefinedPredicate(*args, **kwargs)
-        obj = super().__new__(cls, *args)
-        return obj
+        return super().__new__(cls, *args)
 
     @property
     def name(self):
@@ -320,7 +317,7 @@ class Predicate(Boolean, metaclass=PredicateMeta):
         Register the signature to the handler.
         """
         if cls.handler is None:
-            raise TypeError("%s cannot be dispatched." % type(cls))
+            raise TypeError(f"{type(cls)} cannot be dispatched.")
         return cls.handler.register(*types, **kwargs)
 
     @classmethod
@@ -453,10 +450,8 @@ class UndefinedPredicate(Predicate):
                     continue
                 if _res is None:
                     _res = res
-                else:
-                    # only check consistency if both resolutors have concluded
-                    if _res != res:
-                        raise ValueError('incompatible resolutors')
+                elif _res != res:
+                    raise ValueError('incompatible resolutors')
                 break
         return res
 

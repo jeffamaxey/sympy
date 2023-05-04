@@ -67,13 +67,15 @@ def _naive_list_centralizer(self, other, af=False):
         commutes_with_gens = lambda x: all(_af_commutes_with(x, gen) for gen in gens)
         centralizer_list = []
         if not af:
-            for element in elements:
-                if commutes_with_gens(element):
-                    centralizer_list.append(Permutation._af_new(element))
+            centralizer_list.extend(
+                Permutation._af_new(element)
+                for element in elements
+                if commutes_with_gens(element)
+            )
         else:
-            for element in elements:
-                if commutes_with_gens(element):
-                    centralizer_list.append(element)
+            centralizer_list.extend(
+                element for element in elements if commutes_with_gens(element)
+            )
         return centralizer_list
     elif hasattr(other, 'getitem'):
         return _naive_list_centralizer(self, PermutationGroup(other), af)
@@ -117,9 +119,7 @@ def _verify_bsgs(group, base, gens):
         if current_stabilizer.order() != candidate.order():
             return False
         current_stabilizer = current_stabilizer.stabilizer(base[i])
-    if current_stabilizer.order() != 1:
-        return False
-    return True
+    return current_stabilizer.order() == 1
 
 
 def _verify_centralizer(group, arg, centr=None):
@@ -266,13 +266,11 @@ def canonicalize_naive(g, dummies, sym, *v):
         for d in dlist:
             q = tuple(_af_rmul(d, h))
             st.add(q)
-    a = list(st)
-    a.sort()
+    a = sorted(st)
     prev = (0,)*size
     for h in a:
-        if h[:-2] == prev[:-2]:
-            if h[-1] != prev[-1]:
-                return 0
+        if h[:-2] == prev[:-2] and h[-1] != prev[-1]:
+            return 0
         prev = h
     return list(a[0])
 
@@ -327,7 +325,7 @@ def graph_certificate(gr):
     # between two vertices assign the
     # even index to the vertex which comes first in items,
     # the odd index to the other vertex
-    vertices = [[] for i in items]
+    vertices = [[] for _ in items]
     i = 0
     for v, neigh in items:
         for v2 in neigh:
@@ -348,11 +346,9 @@ def graph_certificate(gr):
         vlen[len(neigh)] += 1
     v = []
     for i in range(len(vlen)):
-        n = vlen[i]
-        if n:
+        if n := vlen[i]:
             base, gens = get_symmetric_group_sgs(i)
             v.append((base, gens, n, 0))
     v.reverse()
     dummies = list(range(num_indices))
-    can = canonicalize(g, dummies, 0, *v)
-    return can
+    return canonicalize(g, dummies, 0, *v)

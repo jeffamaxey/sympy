@@ -62,8 +62,10 @@ def test_external_imports():
         if mod in existing_modules:
             continue
 
-        if any(mod == i or mod.startswith(i + '.') for i in ['sympy'] +
-            hard_dependencies + hard_optional_dependencies):
+        if any(
+            mod == i or mod.startswith(f'{i}.')
+            for i in ['sympy'] + hard_dependencies + hard_optional_dependencies
+        ):
             continue
 
         if mod in sys.builtin_module_names:

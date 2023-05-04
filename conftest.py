@@ -25,7 +25,11 @@ sys.__displayhook__ = sys.displayhook
 
 
 def _mk_group(group_dict):
-    return list(chain(*[[k+'::'+v for v in files] for k, files in group_dict.items()]))
+    return list(
+        chain(
+            *[[f'{k}::{v}' for v in files] for k, files in group_dict.items()]
+        )
+    )
 
 if os.path.exists(durations_path):
     veryslow_group, slow_group = [_mk_group(group_dict) for group_dict in json.loads(open(durations_path, 'rt').read())]
@@ -57,15 +61,16 @@ def pytest_configure(config):
 
 
 def pytest_runtest_setup(item):
-    if isinstance(item, pytest.Function):
-        if item.nodeid in veryslow_group and (item.config.getvalue("runquick") or
-                                              item.config.getvalue("runveryquick")):
-            pytest.skip("very slow test, skipping since --quickcheck or --veryquickcheck was passed.")
-            return
-        if item.nodeid in slow_group and item.config.getvalue("runveryquick"):
-            pytest.skip("slow test, skipping since --veryquickcheck was passed.")
-            return
+    if not isinstance(item, pytest.Function):
+        return
+    if item.nodeid in veryslow_group and (item.config.getvalue("runquick") or
+                                          item.config.getvalue("runveryquick")):
+        pytest.skip("very slow test, skipping since --quickcheck or --veryquickcheck was passed.")
+        return
+    if item.nodeid in slow_group and item.config.getvalue("runveryquick"):
+        pytest.skip("slow test, skipping since --veryquickcheck was passed.")
+        return
 
-        if item.nodeid in blacklist_group:
-            pytest.skip("blacklisted test, see %s" % blacklist_path)
-            return
+    if item.nodeid in blacklist_group:
+        pytest.skip(f"blacklisted test, see {blacklist_path}")
+        return

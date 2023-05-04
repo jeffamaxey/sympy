@@ -88,20 +88,15 @@ def check_satisfiability(prop, _prop, factbase):
     can_be_true = satisfiable(sat_true)
     can_be_false = satisfiable(sat_false)
 
-    if can_be_true and can_be_false:
-        return None
-
-    if can_be_true and not can_be_false:
-        return True
-
-    if not can_be_true and can_be_false:
+    if can_be_true:
+        return None if can_be_false else True
+    if can_be_false:
         return False
 
-    if not can_be_true and not can_be_false:
-        # TODO: Run additional checks to see which combination of the
-        # assumptions, global_assumptions, and relevant_facts are
-        # inconsistent.
-        raise ValueError("Inconsistent assumptions")
+    # TODO: Run additional checks to see which combination of the
+    # assumptions, global_assumptions, and relevant_facts are
+    # inconsistent.
+    raise ValueError("Inconsistent assumptions")
 
 
 def extract_predargs(proposition, assumptions=None, context=None):
@@ -337,13 +332,11 @@ def get_all_relevant_facts(proposition, assumptions, context,
         kf_encoded.from_cnf(known_facts_CNF)
 
         def translate_literal(lit, delta):
-            if lit > 0:
-                return lit + delta
-            else:
-                return lit - delta
+            return lit + delta if lit > 0 else lit - delta
 
         def translate_data(data, delta):
             return [{translate_literal(i, delta) for i in clause} for clause in data]
+
         data = []
         symbols = []
         n_lit = len(kf_encoded.symbols)

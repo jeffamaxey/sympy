@@ -156,7 +156,7 @@ def test_quaternion_functions():
     assert q1.is_pure() == False
     assert Quaternion(0, 0, 0, 3).is_pure() == True
     assert Quaternion(0, 2, 10, 3).is_pure() == True
-    assert Quaternion(w, 2, 10, 3).is_pure() == None
+    assert Quaternion(w, 2, 10, 3).is_pure() is None
 
     assert q1.angle() == atan(sqrt(29))
     assert q.angle() == atan2(sqrt(x**2 + y**2 + z**2), w)
@@ -167,23 +167,30 @@ def test_quaternion_functions():
     assert Quaternion.arc_coplanar(q1, Quaternion(1, 2, 3, 4)) == True
     assert Quaternion.arc_coplanar(q1, Quaternion(w, 4, 6, 8)) == True
     assert Quaternion.arc_coplanar(q1, Quaternion(2, 7, 4, 1)) == False
-    assert Quaternion.arc_coplanar(q1, Quaternion(w, x, y, z)) == None
+    assert Quaternion.arc_coplanar(q1, Quaternion(w, x, y, z)) is None
     raises(ValueError, lambda: Quaternion.arc_coplanar(q1, q0))
 
     assert Quaternion.vector_coplanar(Quaternion(0, 8, 12, 16), Quaternion(0, 4, 6, 8), Quaternion(0, 2, 3, 4)) == True
     assert Quaternion.vector_coplanar(Quaternion(0, 0, 0, 0), Quaternion(0, 4, 6, 8), Quaternion(0, 2, 3, 4)) == True
     assert Quaternion.vector_coplanar(Quaternion(0, 8, 2, 6), Quaternion(0, 1, 6, 6), Quaternion(0, 0, 3, 4)) == False
-    assert Quaternion.vector_coplanar(Quaternion(0, 1, 3, 4), Quaternion(0, 4, w, 6), Quaternion(0, 6, 8, 1)) == None
+    assert (
+        Quaternion.vector_coplanar(
+            Quaternion(0, 1, 3, 4),
+            Quaternion(0, 4, w, 6),
+            Quaternion(0, 6, 8, 1),
+        )
+        is None
+    )
     raises(ValueError, lambda: Quaternion.vector_coplanar(q0, Quaternion(0, 4, 6, 8), q1))
 
     assert Quaternion(0, 1, 2, 3).parallel(Quaternion(0, 2, 4, 6)) == True
     assert Quaternion(0, 1, 2, 3).parallel(Quaternion(0, 2, 2, 6)) == False
-    assert Quaternion(0, 1, 2, 3).parallel(Quaternion(w, x, y, 6)) == None
+    assert Quaternion(0, 1, 2, 3).parallel(Quaternion(w, x, y, 6)) is None
     raises(ValueError, lambda: q0.parallel(q1))
 
     assert Quaternion(0, 1, 2, 3).orthogonal(Quaternion(0, -2, 1, 0)) == True
     assert Quaternion(0, 2, 4, 7).orthogonal(Quaternion(0, 2, 2, 6)) == False
-    assert Quaternion(0, 2, 4, 7).orthogonal(Quaternion(w, x, y, 6)) == None
+    assert Quaternion(0, 2, 4, 7).orthogonal(Quaternion(w, x, y, 6)) is None
     raises(ValueError, lambda: q0.orthogonal(q1))
 
     assert q1.index_vector() == Quaternion(0, 2*sqrt(870)/29, 3*sqrt(870)/29, 4*sqrt(870)/29)
@@ -194,7 +201,7 @@ def test_quaternion_functions():
 
     assert q0.is_zero_quaternion() == True
     assert q1.is_zero_quaternion() == False
-    assert Quaternion(w, 0, 0, 0).is_zero_quaternion() == None
+    assert Quaternion(w, 0, 0, 0).is_zero_quaternion() is None
 
 def test_quaternion_conversions():
     q1 = Quaternion(1, 2, 3, 4)

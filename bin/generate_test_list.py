@@ -49,23 +49,20 @@ def get_paths(level=15):
 
     """
     wildcards = ["/"]
-    for i in range(level):
-        wildcards.append(wildcards[-1] + "*/")
-    p = ["sympy" + x + "test_*.py" for x in wildcards]
-    return p
+    wildcards.extend(f"{wildcards[-1]}*/" for _ in range(level))
+    return [f"sympy{x}test_*.py" for x in wildcards]
 
 def generate_test_list():
     g = []
     for x in get_paths():
         g.extend(glob(x))
     g = [".".join(x.split("/")[:-1]) for x in g]
-    g = list(set(g))
-    g.sort()
+    g = sorted(set(g))
     return g
 
 if __name__ == '__main__':
     g = generate_test_list()
     print("tests = [")
     for x in g:
-        print("    '%s'," % x)
+        print(f"    '{x}',")
     print("]")

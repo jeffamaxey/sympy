@@ -33,7 +33,7 @@ def main():
 
     res_phi = pde_separate(eq, Xi(r, phi, theta), [Phi(phi), u(r, theta)])
     pprint("But we cannot separate it in regards of variable phi: ")
-    pprint("Result: %s" % res_phi)
+    pprint(f"Result: {res_phi}")
 
     pprint("\n\nSo let's make theta dependent part equal with -C1:")
     eq_theta = Eq(res_theta[0], -C1)

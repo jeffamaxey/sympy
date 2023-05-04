@@ -129,7 +129,7 @@ suppress_warnings = ['ref.citation', 'ref.footnote']
 
 # General substitutions.
 project = 'SymPy'
-copyright = '{} SymPy Development Team'.format(datetime.utcnow().year)
+copyright = f'{datetime.utcnow().year} SymPy Development Team'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
@@ -332,8 +332,16 @@ language = 'en'
 # toctree_only is set to True so that the start file document itself is not included in the
 # output, only the documents referenced by it via TOC trees.  The extra stuff in the master
 # document is intended to show up in the HTML, but doesn't really belong in the LaTeX output.
-latex_documents = [('index', 'sympy-%s.tex' % release, 'SymPy Documentation',
-                    'SymPy Development Team', 'manual', True)]
+latex_documents = [
+    (
+        'index',
+        f'sympy-{release}.tex',
+        'SymPy Documentation',
+        'SymPy Development Team',
+        'manual',
+        True,
+    )
+]
 
 # Additional stuff for the LaTeX preamble.
 # Tweaked to work with XeTeX.
@@ -426,8 +434,7 @@ if not commit_hash:
         commit_hash = 'master'
 
 fork = 'sympy'
-blobpath = \
-    "https://github.com/{}/sympy/blob/{}/sympy/".format(fork, commit_hash)
+blobpath = f"https://github.com/{fork}/sympy/blob/{commit_hash}/sympy/"
 
 
 def linkcode_resolve(domain, info):
@@ -470,10 +477,6 @@ def linkcode_resolve(domain, info):
     except Exception:
         lineno = None
 
-    if lineno:
-        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
-    else:
-        linespec = ""
-
+    linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1) if lineno else ""
     fn = os.path.relpath(fn, start=os.path.dirname(sympy.__file__))
     return blobpath + fn + linespec

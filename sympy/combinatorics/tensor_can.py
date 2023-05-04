@@ -102,10 +102,7 @@ def _trace_S(s, j, b, S_cosets):
 
     If there is not such a representative return None
     """
-    for h in S_cosets[b]:
-        if s[h[b]] == j:
-            return h
-    return None
+    return next((h for h in S_cosets[b] if s[h[b]] == j), None)
 
 
 def _trace_D(gj, p_i, Dxtrav):
@@ -114,10 +111,7 @@ def _trace_D(gj, p_i, Dxtrav):
 
     If there is not such a representative return None
     """
-    for h in Dxtrav:
-        if h[gj] == p_i:
-            return h
-    return None
+    return next((h for h in Dxtrav if h[gj] == p_i), None)
 
 
 def _dumx_remove(dumx, dumx_flat, p0):
@@ -130,10 +124,7 @@ def _dumx_remove(dumx, dumx_flat, p0):
             res.append(dx)
             continue
         k = dx.index(p0)
-        if k % 2 == 0:
-            p0_paired = dx[k + 1]
-        else:
-            p0_paired = dx[k - 1]
+        p0_paired = dx[k + 1] if k % 2 == 0 else dx[k - 1]
         dx.remove(p0)
         dx.remove(p0_paired)
         dumx_flat.remove(p0)
@@ -398,7 +389,7 @@ def double_coset_can_rep(dummies, sym, b_S, sgens, S_transversals, g):
     g = g.array_form
     num_dummies = size - 2
     indices = list(range(num_dummies))
-    all_metrics_with_sym = not any(_ is None for _ in sym)
+    all_metrics_with_sym = all(_ is not None for _ in sym)
     num_types = len(sym)
     dumx = dummies[:]
     dumx_flat = []
@@ -431,7 +422,7 @@ def double_coset_can_rep(dummies, sym, b_S, sgens, S_transversals, g):
             md = [min(_orbit(size, [_af_new(
                 ddx) for ddx in dsgsx], ii)) for ii in range(size - 2)]
 
-        p_i = min([min([md[h[x]] for x in deltab]) for s, d, h in TAB])
+        p_i = min(min(md[h[x]] for x in deltab) for s, d, h in TAB)
         dsgsx1 = [_af_new(_) for _ in dsgsx]
         Dxtrav = _orbit_transversal(size, dsgsx1, p_i, False, af=True) \
             if dsgsx else None
@@ -454,7 +445,7 @@ def double_coset_can_rep(dummies, sym, b_S, sgens, S_transversals, g):
         TAB1 = []
         while TAB:
             s, d, h = TAB.pop()
-            if min([md[h[x]] for x in deltab]) != p_i:
+            if min(md[h[x]] for x in deltab) != p_i:
                 continue
             deltab1 = [x for x in deltab if md[h[x]] == p_i]
             # NEXT = s*deltab1 intersection (d*g)**-1*deltap
@@ -496,10 +487,10 @@ def double_coset_can_rep(dummies, sym, b_S, sgens, S_transversals, g):
                     d1 = _trace_D(dg[j], p_i, Dxtrav)
                     if not d1:
                         continue
-                else:
-                    if p_i != dg[j]:
-                        continue
+                elif p_i == dg[j]:
                     d1 = idn
+                else:
+                    continue
                 assert d1[dg[j]] == p_i  # invariant
                 d1 = [d1[ix] for ix in d]
                 h1 = [d1[g[ix]] for ix in s1]
@@ -588,7 +579,7 @@ def canonical_free(base, gens, g, num_free):
         if x not in base:
             base.append(x)
     h = g
-    for i, transv in enumerate(transversals):
+    for transv in transversals:
         h_i = [size]*num_free
         # find the element s in transversals[i] such that
         # _af_rmul(h, s) has its free elements with the lowest position in h
@@ -757,17 +748,17 @@ def canonicalize(g, dummies, msym, *v):
     [0, 2, 4, 1, 6, 8, 10, 3, 11, 7, 12, 5, 13, 9, 15, 14]
     """
     from sympy.combinatorics.testutil import canonicalize_naive
-    if not isinstance(msym, list):
-        if msym not in (0, 1, None):
-            raise ValueError('msym must be 0, 1 or None')
-        num_types = 1
-    else:
+    if isinstance(msym, list):
         num_types = len(msym)
-        if not all(msymx in (0, 1, None) for msymx in msym):
+        if any(msymx not in (0, 1, None) for msymx in msym):
             raise ValueError('msym entries must be 0, 1 or None')
         if len(dummies) != num_types:
             raise ValueError(
                 'dummies and msym must have the same number of elements')
+    elif msym not in (0, 1, None):
+        raise ValueError('msym must be 0, 1 or None')
+    else:
+        num_types = 1
     size = g.size
     num_tensors = 0
     v1 = []
@@ -776,11 +767,10 @@ def canonicalize(g, dummies, msym, *v):
         # this property is used in double_coset_can_rep;
         # if it is not minimal use canonicalize_naive
         if not _is_minimal_bsgs(base_i, gens_i):
-            mbsgs = get_minimal_bsgs(base_i, gens_i)
-            if not mbsgs:
-                can = canonicalize_naive(g, dummies, msym, *v)
-                return can
-            base_i, gens_i = mbsgs
+            if mbsgs := get_minimal_bsgs(base_i, gens_i):
+                base_i, gens_i = mbsgs
+            else:
+                return canonicalize_naive(g, dummies, msym, *v)
         v1.append((base_i, gens_i, [[]] * n_i, sym_i))
         num_tensors += n_i
 
@@ -817,14 +807,10 @@ def canonicalize(g, dummies, msym, *v):
         free_i = []
         len_tens = gens_i[0].size - 2
         # for each component tensor get a list od fixed islots
-        for j in range(n_i):
+        for _ in range(n_i):
             # get the elements corresponding to the component tensor
             h = g1[start:(start + len_tens)]
-            fr = []
-            # get the positions of the fixed elements in h
-            for k in free:
-                if k in h:
-                    fr.append(h.index(k))
+            fr = [h.index(k) for k in free if k in h]
             free_i.append(fr)
             start += len_tens
         v1[i] = (base_i, gens_i, free_i, sym_i)
@@ -848,11 +834,7 @@ def canonicalize(g, dummies, msym, *v):
     g1_red = _af_new(g1_red)
     g2 = double_coset_can_rep(
         dummies_red, msym, sbase_red, sgens_red, transv_red, g1_red)
-    if g2 == 0:
-        return 0
-    # lift to the case with the free indices
-    g3 = _lift_sgens(size, pos_free, free, g2)
-    return g3
+    return 0 if g2 == 0 else _lift_sgens(size, pos_free, free, g2)
 
 
 def perm_af_direct_product(gens1, gens2, signed=True):
@@ -882,14 +864,10 @@ def perm_af_direct_product(gens1, gens2, signed=True):
     if signed:
         gens1 = [gen[:-2] + end + [gen[-2] + n2, gen[-1] + n2]
                  for gen in gens1]
-        gens2 = [start + [x + n1 for x in gen] for gen in gens2]
     else:
         gens1 = [gen + end for gen in gens1]
-        gens2 = [start + [x + n1 for x in gen] for gen in gens2]
-
-    res = gens1 + gens2
-
-    return res
+    gens2 = [start + [x + n1 for x in gen] for gen in gens2]
+    return gens1 + gens2
 
 
 def bsgs_direct_product(base1, gens1, base2, gens2, signed=True):
@@ -998,7 +976,7 @@ def _is_minimal_bsgs(base, gens):
     sgs1 = gens[:]
     size = gens[0].size
     for i in range(size):
-        if not all(h._array_form[i] == i for h in sgs1):
+        if any(h._array_form[i] != i for h in sgs1):
             base1.append(i)
             sgs1 = [h for h in sgs1 if h._array_form[i] == i]
     return base1 == base
@@ -1027,9 +1005,7 @@ def get_minimal_bsgs(base, gens):
     """
     G = PermutationGroup(gens)
     base, gens = G.schreier_sims_incremental()
-    if not _is_minimal_bsgs(base, gens):
-        return None
-    return base, gens
+    return (base, gens) if _is_minimal_bsgs(base, gens) else None
 
 
 def tensor_gens(base, gens, list_free_indices, sym=0):
@@ -1074,10 +1050,9 @@ def tensor_gens(base, gens, list_free_indices, sym=0):
         """
         if not free_indices:
             return base[:], gens[:]
-        else:
-            H = G.pointwise_stabilizer(free_indices)
-            base, sgs = H.schreier_sims_incremental()
-            return base, sgs
+        H = G.pointwise_stabilizer(free_indices)
+        base, sgs = H.schreier_sims_incremental()
+        return base, sgs
 
     # if not base there is no slot symmetry for the component tensors
     # if list_free_indices.count([]) < 2 there is no commutation symmetry
@@ -1090,11 +1065,7 @@ def tensor_gens(base, gens, list_free_indices, sym=0):
 
     # if any(list_free_indices) one needs to compute the pointwise
     # stabilizer, so G is needed
-    if any(list_free_indices):
-        G = PermutationGroup(gens)
-    else:
-        G = None
-
+    G = PermutationGroup(gens) if any(list_free_indices) else None
     # no_free list of lists of indices for component tensors without fixed
     # indices
     no_free = []

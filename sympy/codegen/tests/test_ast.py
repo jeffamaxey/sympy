@@ -83,7 +83,7 @@ def test_AugAssign():
         b = cls(x, y)
         assert a.func(*a.args) == a == b
         assert a.binop == binop
-        assert a.op == binop + '='
+        assert a.op == f'{binop}='
 
     # Here we test things to show that they error
     # Matrix to scalar
@@ -122,7 +122,7 @@ def test_Assignment_printing():
     for cls in assignment_classes:
         for lhs, rhs in pairs:
             a = cls(lhs, rhs)
-            assert repr(a) == '%s(%s, %s)' % (cls.__name__, repr(lhs), repr(rhs))
+            assert repr(a) == f'{cls.__name__}({repr(lhs)}, {repr(rhs)})'
 
 
 def test_CodeBlock():
@@ -256,7 +256,7 @@ def test_none():
         pass
     foo = Foo()
     assert foo != none
-    assert none == None
+    assert none is None
     assert none == NoneToken()
     assert none.func(*none.args) == none
 
@@ -578,7 +578,7 @@ def test_Print():
     ps2 = Print([n, x])
     assert ps2 == Print([n, x])
     assert ps2 != ps
-    assert ps2.format_string == None
+    assert ps2.format_string is None
 
 
 def test_FunctionPrototype_and_FunctionDefinition():
@@ -634,10 +634,10 @@ def test_FunctionCall():
     assert fc2.function_args[0] == 2
     assert fc2.function_args[1] == 3
     assert fc2.function_args[2] == 4
-    assert str(fc2) in ( # not sure if QuotedString is a better default...
+    assert str(fc2) in {
         'FunctionCall(fma, function_args=(2, 3, 4))',
         'FunctionCall("fma", function_args=(2, 3, 4))',
-    )
+    }
 
 def test_ast_replace():
     x = Variable('x', real)

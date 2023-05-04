@@ -7,6 +7,7 @@ The advantage over py.test is that it only depends on sympy and should just
 work in any circumstances. See "sympy.doctest?" for documentation.
 """
 
+
 from __future__ import print_function
 
 # files listed here can be in unix forward slash format with paths
@@ -75,11 +76,17 @@ if options.types:
 
 import sympy
 
-ok = sympy.doctest(*args, verbose=options.verbose, blacklist=blacklist,
-    normal=options.normal, subprocess=options.subprocess, split=options.split,
-    rerun=options.rerun, colors=options.colors, force_colors=options.force_colors)
-
-if ok:
+if ok := sympy.doctest(
+    *args,
+    verbose=options.verbose,
+    blacklist=blacklist,
+    normal=options.normal,
+    subprocess=options.subprocess,
+    split=options.split,
+    rerun=options.rerun,
+    colors=options.colors,
+    force_colors=options.force_colors,
+):
     sys.exit(0)
 else:
     sys.exit(1)

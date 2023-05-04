@@ -85,11 +85,21 @@ def generate_code():
     values = ['(set(%s), set(%s))' % (sorted(i[1][0], key=str),
                                       sorted(i[1][1], key=str))
               for i in items]
-    m = LINE.join(['\n'.join(
-        wrap("{}: {}".format(k, v),
-            subsequent_indent=HANG,
-            break_long_words=False))
-        for k, v in zip(keys, values)]) + ','
+    m = (
+        LINE.join(
+            [
+                '\n'.join(
+                    wrap(
+                        f"{k}: {v}",
+                        subsequent_indent=HANG,
+                        break_long_words=False,
+                    )
+                )
+                for k, v in zip(keys, values)
+            ]
+        )
+        + ','
+    )
 
     return code_string % (p, m)
 

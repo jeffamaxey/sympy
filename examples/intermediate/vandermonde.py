@@ -29,11 +29,10 @@ def comb_w_rep(n, k):
     if k == 0:
         return [[]]
     combs = [[i] for i in range(n)]
-    for i in range(k - 1):
+    for _ in range(k - 1):
         curr = []
         for p in combs:
-            for m in range(p[-1], n):
-                curr.append(p + [m])
+            curr.extend(p + [m] for m in range(p[-1], n))
         combs = curr
     return combs
 

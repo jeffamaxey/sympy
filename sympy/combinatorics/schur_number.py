@@ -38,16 +38,17 @@ class SchurNumber(Function):
 
     @classmethod
     def eval(cls, k):
-        if k.is_Number:
-            if k is S.Infinity:
-                return S.Infinity
-            if k.is_zero:
-                return S.Zero
-            if not k.is_integer or k.is_negative:
-                raise ValueError("k should be a positive integer")
+        if not k.is_Number:
+            return
+        if k is S.Infinity:
+            return S.Infinity
+        if k.is_zero:
+            return S.Zero
+        if not k.is_integer or k.is_negative:
+            raise ValueError("k should be a positive integer")
+        if k <= 5:
             first_known_schur_numbers = {1: 1, 2: 4, 3: 13, 4: 44, 5: 160}
-            if k <= 5:
-                return Integer(first_known_schur_numbers[k])
+            return Integer(first_known_schur_numbers[k])
 
     def lower_bound(self):
         f_ = self.args[0]

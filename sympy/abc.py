@@ -51,6 +51,7 @@ pi(C, Q)
 
 """
 
+
 from typing import Any, Dict as tDict
 
 import string
@@ -105,7 +106,7 @@ while ns:
         _clash1[_k] = null
         _latin.remove(_k)
 _clash = {}
-_clash.update(_clash1)
+_clash |= _clash1
 _clash.update(_clash2)
 
 del _latin, _greek, Symbol, _k, null

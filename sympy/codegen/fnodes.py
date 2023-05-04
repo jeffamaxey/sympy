@@ -72,10 +72,7 @@ class use_rename(Token):
     _construct_original = String
 
 def _name(arg):
-    if hasattr(arg, 'name'):
-        return arg.name
-    else:
-        return String(arg)
+    return arg.name if hasattr(arg, 'name') else String(arg)
 
 class use(Token):
     """ Represents a use statement in Fortran.
@@ -156,10 +153,7 @@ class Subroutine(Node):
 
     @classmethod
     def _construct_body(cls, itr):
-        if isinstance(itr, CodeBlock):
-            return itr
-        else:
-            return CodeBlock(*itr)
+        return itr if isinstance(itr, CodeBlock) else CodeBlock(*itr)
 
 class SubroutineCall(Token):
     """ Represents a call to a subroutine in Fortran.
@@ -281,15 +275,13 @@ class Extent(Basic):
         if len(args) == 2:
             low, high = args
             return Basic.__new__(cls, sympify(low), sympify(high))
-        elif len(args) == 0 or (len(args) == 1 and args[0] in (':', None)):
+        elif not args or (len(args) == 1 and args[0] in (':', None)):
             return Basic.__new__(cls)  # assumed shape
         else:
             raise ValueError("Expected 0 or 2 args (or one argument == None or ':')")
 
     def _sympystr(self, printer):
-        if len(self.args) == 0:
-            return ':'
-        return ":".join(str(arg) for arg in self.args)
+        return ':' if len(self.args) == 0 else ":".join(str(arg) for arg in self.args)
 
 assumed_extent = Extent() # or Extent(':'), Extent(None)
 
@@ -324,7 +316,7 @@ def dimension(*args):
             parameters.append(Extent(*arg))
         else:
             parameters.append(sympify(arg))
-    if len(args) == 0:
+    if not args:
         raise ValueError("Need at least one dimension")
     return Attribute('dimension', parameters)
 
@@ -362,7 +354,7 @@ def array(symbol, dim, intent=None, *, attrs=(), value=None, type=None):
     """
     if isinstance(dim, Attribute):
         if str(dim.name) != 'dimension':
-            raise ValueError("Got an unexpected Attribute argument as dim: %s" % str(dim))
+            raise ValueError(f"Got an unexpected Attribute argument as dim: {str(dim)}")
     else:
         dim = dimension(*dim)
 
@@ -587,7 +579,7 @@ class FFunction(Function):
         if printer._settings['standard'] < self._required_standard:
             raise NotImplementedError("%s requires Fortran %d or newer" %
                                       (name, self._required_standard))
-        return '{}({})'.format(name, ', '.join(map(printer._print, self.args)))
+        return f"{name}({', '.join(map(printer._print, self.args))})"
 
 
 class F95Function(FFunction):
@@ -624,7 +616,7 @@ class _literal(Float):
     _decimals = None  # type: int
 
     def _fcode(self, printer, *args, **kwargs):
-        mantissa, sgnd_ex = ('%.{}e'.format(self._decimals) % self).split('e')
+        mantissa, sgnd_ex = (f'%.{self._decimals}e' % self).split('e')
         mantissa = mantissa.strip('0').rstrip('.')
         ex_sgn, ex_num = sgnd_ex[0], sgnd_ex[1:].lstrip('0')
         ex_sgn = '' if ex_sgn == '+' else ex_sgn

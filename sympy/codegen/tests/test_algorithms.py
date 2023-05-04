@@ -34,14 +34,26 @@ def test_newtons_method_function__ccode():
 
     compile_kw = dict(std='c99')
     with tempfile.TemporaryDirectory() as folder:
-        mod, info = compile_link_import_strings([
-            ('newton.c', ('#include <math.h>\n'
-                          '#include <stdio.h>\n') + ccode(func)),
-            ('_newton.pyx', ("#cython: language_level={}\n".format("3") +
-                             "cdef extern double newton(double)\n"
-                             "def py_newton(x):\n"
-                             "    return newton(x)\n"))
-        ], build_dir=folder, compile_kwargs=compile_kw)
+        mod, info = compile_link_import_strings(
+            [
+                (
+                    'newton.c',
+                    ('#include <math.h>\n' '#include <stdio.h>\n')
+                    + ccode(func),
+                ),
+                (
+                    '_newton.pyx',
+                    (
+                        f"#cython: language_level=3\n"
+                        + "cdef extern double newton(double)\n"
+                        "def py_newton(x):\n"
+                        "    return newton(x)\n"
+                    ),
+                ),
+            ],
+            build_dir=folder,
+            compile_kwargs=compile_kw,
+        )
         assert abs(mod.py_newton(0.5) - 0.865474033102) < 1e-12
 
 
@@ -58,13 +70,21 @@ def test_newtons_method_function__fcode():
 
     f_mod = f_module([func], 'mod_newton')
     with tempfile.TemporaryDirectory() as folder:
-        mod, info = compile_link_import_strings([
-            ('newton.f90', f_mod),
-            ('_newton.pyx', ("#cython: language_level={}\n".format("3") +
-                             "cdef extern double newton(double*)\n"
-                             "def py_newton(double x):\n"
-                             "    return newton(&x)\n"))
-        ], build_dir=folder)
+        mod, info = compile_link_import_strings(
+            [
+                ('newton.f90', f_mod),
+                (
+                    '_newton.pyx',
+                    (
+                        f"#cython: language_level=3\n"
+                        + "cdef extern double newton(double*)\n"
+                        "def py_newton(double x):\n"
+                        "    return newton(&x)\n"
+                    ),
+                ),
+            ],
+            build_dir=folder,
+        )
         assert abs(mod.py_newton(0.5) - 0.865474033102) < 1e-12
 
 
@@ -95,14 +115,26 @@ def test_newtons_method_function__ccode_parameters():
 
     compile_kw = dict(std='c99')
     with tempfile.TemporaryDirectory() as folder:
-        mod, info = compile_link_import_strings([
-            ('newton_par.c', ('#include <math.h>\n'
-                          '#include <stdio.h>\n') + ccode(func)),
-            ('_newton_par.pyx', ("#cython: language_level={}\n".format("3") +
-                                 "cdef extern double newton(double, double, double, double)\n"
-                             "def py_newton(x, A=1, k=1, p=1):\n"
-                             "    return newton(x, A, k, p)\n"))
-        ], compile_kwargs=compile_kw, build_dir=folder)
+        mod, info = compile_link_import_strings(
+            [
+                (
+                    'newton_par.c',
+                    ('#include <math.h>\n' '#include <stdio.h>\n')
+                    + ccode(func),
+                ),
+                (
+                    '_newton_par.pyx',
+                    (
+                        f"#cython: language_level=3\n"
+                        + "cdef extern double newton(double, double, double, double)\n"
+                        "def py_newton(x, A=1, k=1, p=1):\n"
+                        "    return newton(x, A, k, p)\n"
+                    ),
+                ),
+            ],
+            compile_kwargs=compile_kw,
+            build_dir=folder,
+        )
 
         if use_wurlitzer:
             with wurlitzer.pipes() as (out, err):

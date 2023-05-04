@@ -421,9 +421,7 @@ def test_DiagramGrid():
     assert grid[2, 3] == D_
     assert grid[2, 4] == E_
 
-    morphisms = {}
-    for m in [f, g, h, i, j, k, l, m, o, p, q, r, s]:
-        morphisms[m] = FiniteSet()
+    morphisms = {m: FiniteSet() for m in [f, g, h, i, j, k, l, m, o, p, q, r, s]}
     assert grid.morphisms == morphisms
 
     # Test the five lemma with object grouping.
@@ -602,9 +600,7 @@ def test_DiagramGrid_pseudopod():
     assert grid[2, 3] is None
     assert grid[2, 4] is None
 
-    morphisms = {}
-    for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10]:
-        morphisms[f] = FiniteSet()
+    morphisms = {f: FiniteSet() for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10]}
     assert grid.morphisms == morphisms
 
 

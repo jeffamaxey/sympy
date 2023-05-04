@@ -48,7 +48,7 @@ def _GitHub_release(version, push, username=None, user='sympy', token=None,
 
     release_text = GitHub_release_text(version)
     short_version = get_sympy_short_version(version)
-    tag = 'sympy-' + version
+    tag = f'sympy-{version}'
     prerelease = short_version != version
 
     urls = URLs(user=user, repo=repo)
@@ -68,13 +68,13 @@ def _GitHub_release(version, push, username=None, user='sympy', token=None,
 
     # See https://developer.github.com/v3/repos/releases/#create-a-release
     # First, create the release
-    post = {}
-    post['tag_name'] = tag
-    post['name'] = "SymPy " + version
-    post['body'] = release_text
-    post['draft'] = draft
-    post['prerelease'] = prerelease
-
+    post = {
+        'tag_name': tag,
+        'name': f"SymPy {version}",
+        'body': release_text,
+        'draft': draft,
+        'prerelease': prerelease,
+    }
     print("Creating release for tag", tag, end=' ')
 
     if push:
@@ -90,9 +90,7 @@ def _GitHub_release(version, push, username=None, user='sympy', token=None,
     for key in descriptions:
         tarball = get_tarball_name(key, version)
 
-        params = {}
-        params['name'] = tarball
-
+        params = {'name': tarball}
         if tarball.endswith('gz'):
             headers = {'Content-Type':'application/gzip'}
         elif tarball.endswith('pdf'):
@@ -104,7 +102,7 @@ def _GitHub_release(version, push, username=None, user='sympy', token=None,
 
         print("Uploading", tarball, end=' ')
         sys.stdout.flush()
-        with open(os.path.join('release/release-' + version, tarball), 'rb') as f:
+        with open(os.path.join(f'release/release-{version}', tarball), 'rb') as f:
             if push:
                 result = query_GitHub(urls.release_uploads_url % release_id, username,
                     password=None, token=token, data=f, params=params,
@@ -175,23 +173,24 @@ class URLs(object):
         self.uploads_url = uploads_url
         self.main_url = main_url
 
-        self.pull_list_url = api_url + "/repos" + "/" + user + "/" + repo + "/pulls"
-        self.issue_list_url = api_url + "/repos/" + user + "/" + repo + "/issues"
-        self.releases_url = api_url + "/repos/" + user + "/" + repo + "/releases"
-        self.single_issue_template = self.issue_list_url + "/%d"
-        self.single_pull_template = self.pull_list_url + "/%d"
-        self.user_info_template = api_url + "/users/%s"
-        self.user_repos_template = api_url + "/users/%s/repos"
-        self.issue_comment_template = (api_url + "/repos" + "/" + user + "/" + repo + "/issues/%d" +
-            "/comments")
-        self.release_uploads_url = (uploads_url + "/repos/" + user + "/" +
-            repo + "/releases/%d" + "/assets")
-        self.release_download_url = (main_url + "/" + user + "/" + repo +
-            "/releases/download/%s/%s")
+        self.pull_list_url = f"{api_url}/repos/{user}/{repo}/pulls"
+        self.issue_list_url = f"{api_url}/repos/{user}/{repo}/issues"
+        self.releases_url = f"{api_url}/repos/{user}/{repo}/releases"
+        self.single_issue_template = f"{self.issue_list_url}/%d"
+        self.single_pull_template = f"{self.pull_list_url}/%d"
+        self.user_info_template = f"{api_url}/users/%s"
+        self.user_repos_template = f"{api_url}/users/%s/repos"
+        self.issue_comment_template = (
+            f"{api_url}/repos/{user}/{repo}/issues/%d/comments"
+        )
+        self.release_uploads_url = (
+            f"{uploads_url}/repos/{user}/{repo}/releases/%d/assets"
+        )
+        self.release_download_url = f"{main_url}/{user}/{repo}/releases/download/%s/%s"
 
 
 def load_token_file(path="~/.sympy/release-token"):
-    print("> Using token file %s" % path)
+    print(f"> Using token file {path}")
 
     path = os.path.expanduser(path)
     path = os.path.abspath(path)
@@ -217,7 +216,7 @@ will be kept as a Python variable as long as this script is running and
 https to authenticate with GitHub, otherwise not saved anywhere else:\
 """
     if username:
-        print("> Authenticating as %s" % username)
+        print(f"> Authenticating as {username}")
     else:
         print(_login_message)
         username = input("Username: ")
@@ -254,8 +253,9 @@ https to authenticate with GitHub, otherwise not saved anywhere else:\
                 name = "SymPy Release"
             token = generate_token(urls, username, password, name=name)
             print("Your token is", token)
-            print("Use this token from now on as GitHub_release:token=" + token +
-                ",username=" + username)
+            print(
+                f"Use this token from now on as GitHub_release:token={token},username={username}"
+            )
             print(red("DO NOT share this token with anyone"))
             save = input("Do you want to save this token to a file [yes]? ")
             if save.lower().strip() in ['y', 'yes', 'ye', '']:
@@ -275,7 +275,7 @@ def check_tag_exists(version):
     """
     Check if the tag for this release has been uploaded yet.
     """
-    tag = 'sympy-' + version
+    tag = f'sympy-{version}'
     all_tag_lines = run('git', 'ls-remote', '--tags', 'origin')
     return any(tag in tag_line for tag_line in all_tag_lines)
 
@@ -330,8 +330,7 @@ def query_GitHub(url, username=None, password=None, token=None, data=None,
         r = requests.get(url, auth=auth, headers=headers, params=params, stream=True)
 
     if r.status_code == 401:
-        two_factor = r.headers.get('X-GitHub-OTP')
-        if two_factor:
+        if two_factor := r.headers.get('X-GitHub-OTP'):
             print("A two-factor authentication code is required:", two_factor.split(';')[1].strip())
             OTP = input("Authentication code: ")
             return query_GitHub(url, username=username, password=password,
@@ -391,9 +390,10 @@ def table(version):
     # anything else I've tried.
     @contextmanager
     def tag(name):
-        table.append("<%s>" % name)
+        table.append(f"<{name}>")
         yield
-        table.append("</%s>" % name)
+        table.append(f"</{name}>")
+
     @contextmanager
     def a_href(link):
         table.append("<a href=\"%s\">" % link)
@@ -410,7 +410,7 @@ def table(version):
             name = get_tarball_name(key, version)
             with tag('tr'):
                 with tag('td'):
-                    with a_href('https://github.com/sympy/sympy/releases/download/sympy-%s/%s' % (version, name)):
+                    with a_href(f'https://github.com/sympy/sympy/releases/download/sympy-{version}/{name}'):
                         with tag('b'):
                             table.append(name)
                 with tag('td'):
@@ -493,21 +493,19 @@ def get_tarball_name(file, version):
     elif file == 'wheel':
         name = 'sympy-{version}-py3-none-any.whl'
     else:
-        raise ValueError(file + " is not a recognized argument")
+        raise ValueError(f"{file} is not a recognized argument")
 
-    ret = name.format(version=version, type=file,
-        extension=doctypename[file])
-    return ret
+    return name.format(version=version, type=file, extension=doctypename[file])
 
 
 def release_files(version):
     """
     Returns the list of local release files
     """
-    paths = glob.glob('release/release-' + version + '/*')
-    if not paths:
+    if paths := glob.glob(f'release/release-{version}/*'):
+        return paths
+    else:
         raise ValueError("No release files found")
-    return paths
 
 
 tarball_name_types = {

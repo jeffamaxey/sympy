@@ -55,14 +55,13 @@ class Quaternion(Expr):
 
         if any(i.is_commutative is False for i in [a, b, c, d]):
             raise ValueError("arguments have to be commutative")
-        else:
-            obj = Expr.__new__(cls, a, b, c, d)
-            obj._a = a
-            obj._b = b
-            obj._c = c
-            obj._d = d
-            obj._real_field = real_field
-            return obj
+        obj = Expr.__new__(cls, a, b, c, d)
+        obj._a = a
+        obj._b = b
+        obj._c = c
+        obj._d = d
+        obj._real_field = real_field
+        return obj
 
     @property
     def a(self):
@@ -342,12 +341,10 @@ class Quaternion(Expr):
         (2 + 3*I)*(3 + 4*I) + (2 + 3*I)*(2 + 5*I)*i + 0*j + (2 + 3*I)*(7 + 8*I)*k
 
         """
-        # None is a Quaternion:
-        if not isinstance(q1, Quaternion) and not isinstance(q2, Quaternion):
-            return q1 * q2
-
-        # If q1 is a number or a SymPy expression instead of a quaternion
         if not isinstance(q1, Quaternion):
+            if not isinstance(q2, Quaternion):
+                return q1 * q2
+
             if q2.real_field and q1.is_complex:
                 return Quaternion(re(q1), im(q1), 0, 0) * q2
             elif q1.is_commutative:
@@ -671,9 +668,7 @@ class Quaternion(Expr):
         z = trigsimp(q.d / s)
 
         v = (x, y, z)
-        t = (v, angle)
-
-        return t
+        return v, angle
 
     def to_rotation_matrix(self, v=None):
         """Returns the equivalent rotation transformation matrix of the quaternion
@@ -741,17 +736,16 @@ class Quaternion(Expr):
         if not v:
             return Matrix([[m00, m01, m02], [m10, m11, m12], [m20, m21, m22]])
 
-        else:
-            (x, y, z) = v
+        (x, y, z) = v
 
-            m03 = x - x*m00 - y*m01 - z*m02
-            m13 = y - x*m10 - y*m11 - z*m12
-            m23 = z - x*m20 - y*m21 - z*m22
-            m30 = m31 = m32 = 0
-            m33 = 1
+        m03 = x - x*m00 - y*m01 - z*m02
+        m13 = y - x*m10 - y*m11 - z*m12
+        m23 = z - x*m20 - y*m21 - z*m22
+        m30 = m31 = m32 = 0
+        m33 = 1
 
-            return Matrix([[m00, m01, m02, m03], [m10, m11, m12, m13],
-                          [m20, m21, m22, m23], [m30, m31, m32, m33]])
+        return Matrix([[m00, m01, m02, m03], [m10, m11, m12, m13],
+                      [m20, m21, m22, m23], [m30, m31, m32, m33]])
 
     def scalar_part(self):
         r"""Returns scalar part($\mathbf{S}(q)$) of the quaternion q.

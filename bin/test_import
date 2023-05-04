@@ -23,7 +23,7 @@ def test():
     return t
 
 
-tests = [test() for x in range(n_tests + 1)]
+tests = [test() for _ in range(n_tests + 1)]
 print("Note: the first run (warm up) was not included in the average + std dev")
 print("All runs (including warm up):")
 print(tests)

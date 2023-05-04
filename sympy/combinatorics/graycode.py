@@ -314,8 +314,9 @@ class GrayCode(Basic):
                 return str(k % 2)
             m = 2**(n - 1)
             if k < m:
-                return '0' + _unrank(k, n - 1)
-            return '1' + _unrank(m - (k % m) - 1, n - 1)
+                return f'0{_unrank(k, n - 1)}'
+            return f'1{_unrank(m - k % m - 1, n - 1)}'
+
         return _unrank(rank, n)
 
 
@@ -330,7 +331,7 @@ def random_bitstring(n):
     >>> random_bitstring(3) # doctest: +SKIP
     100
     """
-    return ''.join([random.choice('01') for i in range(n)])
+    return ''.join([random.choice('01') for _ in range(n)])
 
 
 def gray_to_bin(bin_list):

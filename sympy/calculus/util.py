@@ -196,11 +196,9 @@ def function_range(f, symbol, domain):
             solution = solveset(f.diff(symbol), symbol, interval)
 
             if not iterable(solution):
-                raise NotImplementedError(
-                        'Unable to find critical points for {}'.format(f))
+                raise NotImplementedError(f'Unable to find critical points for {f}')
             if isinstance(solution, ImageSet):
-                raise NotImplementedError(
-                        'Infinite number of critical points for {}'.format(f))
+                raise NotImplementedError(f'Infinite number of critical points for {f}')
 
             critical_points += solution
 
@@ -267,7 +265,7 @@ def not_empty_in(finset_intersection, *syms):
     # TODO: handle piecewise defined functions
     # TODO: handle transcendental functions
     # TODO: handle multivariate functions
-    if len(syms) == 0:
+    if not syms:
         raise ValueError("One or more symbols must be given in syms.")
 
     if finset_intersection is S.EmptySet:
@@ -286,14 +284,14 @@ def not_empty_in(finset_intersection, *syms):
         _sets = finset_intersection.args[0]
 
     if not isinstance(finite_set, FiniteSet):
-        raise ValueError('A FiniteSet must be given, not %s: %s' %
-                         (type(finite_set), finite_set))
+        raise ValueError(
+            f'A FiniteSet must be given, not {type(finite_set)}: {finite_set}'
+        )
 
     if len(syms) == 1:
         symb = syms[0]
     else:
-        raise NotImplementedError('more than one variables %s not handled' %
-                                  (syms,))
+        raise NotImplementedError(f'more than one variables {syms} not handled')
 
     def elm_domain(expr, intrvl):
         """ Finds the domain of an expression in any given interval """
@@ -396,7 +394,7 @@ def periodicity(f, symbol, check=False):
     >>> periodicity(exp(x), x)
     """
     if symbol.kind is not NumberKind:
-        raise NotImplementedError("Cannot use symbol of kind %s" % symbol.kind)
+        raise NotImplementedError(f"Cannot use symbol of kind {symbol.kind}")
     temp = Dummy('x', real=True)
     f = f.subs(symbol, temp)
     symbol = temp
@@ -522,10 +520,7 @@ def periodicity(f, symbol, check=False):
                         break
 
     if period is not None:
-        if check:
-            return _check(orig_f, period)
-        return period
-
+        return _check(orig_f, period) if check else period
     return None
 
 
@@ -614,9 +609,6 @@ def lcim(numbers):
     elif all(num.is_rational for num in numbers):
         result = lcm_list(numbers)
 
-    else:
-        pass
-
     return result
 
 def is_convex(f, *syms, domain=S.Reals):
@@ -692,9 +684,7 @@ def is_convex(f, *syms, domain=S.Reals):
         return False
 
     condition = f.diff(var, 2) < 0
-    if solve_univariate_inequality(condition, var, False, domain):
-        return False
-    return True
+    return not solve_univariate_inequality(condition, var, False, domain)
 
 
 def stationary_points(f, symbol, domain=S.Reals):
@@ -744,9 +734,7 @@ def stationary_points(f, symbol, domain=S.Reals):
         return S.EmptySet
 
     domain = continuous_domain(f, symbol, domain)
-    set = solveset(diff(f, symbol), symbol, domain)
-
-    return set
+    return solveset(diff(f, symbol), symbol, domain)
 
 
 def maximum(f, symbol, domain=S.Reals):
@@ -793,7 +781,7 @@ def maximum(f, symbol, domain=S.Reals):
 
         return function_range(f, symbol, domain).sup
     else:
-        raise ValueError("%s is not a valid symbol." % symbol)
+        raise ValueError(f"{symbol} is not a valid symbol.")
 
 
 def minimum(f, symbol, domain=S.Reals):
@@ -840,4 +828,4 @@ def minimum(f, symbol, domain=S.Reals):
 
         return function_range(f, symbol, domain).inf
     else:
-        raise ValueError("%s is not a valid symbol." % symbol)
+        raise ValueError(f"{symbol} is not a valid symbol.")

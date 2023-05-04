@@ -17,6 +17,7 @@ or
 If no arguments are given, all files in sympy/ are checked.
 """
 
+
 from __future__ import print_function
 
 import os
@@ -53,10 +54,7 @@ color_templates = (
     ("White", "1;37"),
 )
 
-colors = {}
-
-for name, value in color_templates:
-    colors[name] = value
+colors = dict(color_templates)
 c_normal = '\033[0m'
 c_color = '\033[%sm'
 
@@ -65,7 +63,7 @@ def print_header(name, underline=None, color=None):
 
     print()
     if color:
-        print("%s%s%s" % (c_color % colors[color], name, c_normal))
+        print(f"{c_color % colors[color]}{name}{c_normal}")
     else:
         print(name)
     if underline and not color:
@@ -79,13 +77,9 @@ def print_coverage(module_path, c, c_missing_doc, c_missing_doctest, c_indirect_
     """ Prints details (depending on verbose) of a module """
 
     doctest_color = "Brown"
-    sphinx_color = "DarkGray"
     less_100_color = "Red"
     less_50_color = "LightRed"
     equal_100_color = "Green"
-    big_header_color = "LightPurple"
-    small_header_color = "Purple"
-
     if no_color:
         score_string = "Doctests: %s%% (%s of %s)" % (score, total_doctests,
             total_members)
@@ -102,6 +96,7 @@ def print_coverage(module_path, c, c_missing_doc, c_missing_doctest, c_indirect_
             (c_color % colors[doctest_color], c_normal, c_color % colors[equal_100_color], score, total_doctests, total_members, c_normal)
 
     if sphinx:
+        sphinx_color = "DarkGray"
         if no_color:
             sphinx_score_string = "Sphinx: %s%% (%s of %s)" % (sphinx_score,
                 total_members - total_sphinx, total_members)
@@ -125,14 +120,16 @@ def print_coverage(module_path, c, c_missing_doc, c_missing_doctest, c_indirect_
         print('\n' + '-'*70)
         print(module_path)
         print('-'*70)
+    elif sphinx:
+        print(f"{module_path}: {score_string} {sphinx_score_string}")
     else:
-        if sphinx:
-            print("%s: %s %s" % (module_path, score_string, sphinx_score_string))
-        else:
-            print("%s: %s" % (module_path, score_string))
+        print(f"{module_path}: {score_string}")
 
     if verbose:
+        big_header_color = "LightPurple"
         print_header('CLASSES', '*', not no_color and big_header_color)
+        small_header_color = "Purple"
+
         if not c:
             print_header('No classes found!')
 
@@ -140,22 +137,22 @@ def print_coverage(module_path, c, c_missing_doc, c_missing_doctest, c_indirect_
             if c_missing_doc:
                 print_header('Missing docstrings', '-', not no_color and small_header_color)
                 for md in c_missing_doc:
-                    print('  * ' + md)
+                    print(f'  * {md}')
             if c_missing_doctest:
                 print_header('Missing doctests', '-', not no_color and small_header_color)
                 for md in c_missing_doctest:
-                    print('  * ' + md)
+                    print(f'  * {md}')
             if c_indirect_doctest:
                 # Use "# indirect doctest" in the docstring to
                 # suppress this warning.
                 print_header('Indirect doctests', '-', not no_color and small_header_color)
                 for md in c_indirect_doctest:
-                    print('  * ' + md)
+                    print(f'  * {md}')
                 print('\n    Use \"# indirect doctest\" in the docstring to suppress this warning')
             if c_sph:
                 print_header('Not imported into Sphinx', '-', not no_color and small_header_color)
                 for md in c_sph:
-                    print('  * ' + md)
+                    print(f'  * {md}')
 
         print_header('FUNCTIONS', '*', not no_color and big_header_color)
         if not f:
@@ -164,20 +161,20 @@ def print_coverage(module_path, c, c_missing_doc, c_missing_doctest, c_indirect_
             if f_missing_doc:
                 print_header('Missing docstrings', '-', not no_color and small_header_color)
                 for md in f_missing_doc:
-                    print('  * ' + md)
+                    print(f'  * {md}')
             if f_missing_doctest:
                 print_header('Missing doctests', '-', not no_color and small_header_color)
                 for md in f_missing_doctest:
-                    print('  * ' + md)
+                    print(f'  * {md}')
             if f_indirect_doctest:
                 print_header('Indirect doctests', '-', not no_color and small_header_color)
                 for md in f_indirect_doctest:
-                    print('  * ' + md)
+                    print(f'  * {md}')
                 print('\n    Use \"# indirect doctest\" in the docstring to suppress this warning')
             if f_sph:
                 print_header('Not imported into Sphinx', '-', not no_color and small_header_color)
                 for md in f_sph:
-                    print('  * ' + md)
+                    print(f'  * {md}')
 
     if verbose:
         print('\n' + '-'*70)
@@ -194,10 +191,7 @@ def _is_indirect(member, doc):
 
     d = member in doc
     e = 'indirect doctest' in doc
-    if not d and not e:
-        return True
-    else:
-        return False
+    return not d and not e
 
 
 def _get_arg_list(name, fobj):
@@ -212,15 +206,13 @@ def _get_arg_list(name, fobj):
     arg_list = []
 
     if argspec.args:
-        for arg in argspec.args:
-            arg_list.append(str(arg))
-
+        arg_list.extend(str(arg) for arg in argspec.args)
     arg_list.reverse()
 
     # Now add the defaults
     if argspec.defaults:
         for i in range(len(argspec.defaults)):
-            arg_list[i] = str(arg_list[i]) + '=' + str(argspec.defaults[-i])
+            arg_list[i] = f'{str(arg_list[i])}={str(argspec.defaults[-i])}'
 
     # Get the list in right order
     arg_list.reverse()
@@ -234,10 +226,7 @@ def _get_arg_list(name, fobj):
     # Truncate long arguments
     arg_list = [x[:trunc] for x in arg_list]
 
-    # Construct the parameter string (enclosed in brackets)
-    str_param = "%s(%s)" % (name, ', '.join(arg_list))
-
-    return str_param
+    return f"{name}({', '.join(arg_list)})"
 
 
 def get_mod_name(path, base):
@@ -255,7 +244,7 @@ def get_mod_name(path, base):
     h, t = os.path.split(rel_path)
     while h or t:
         if t:
-            file_module = t + '.' + file_module
+            file_module = f'{t}.{file_module}'
         h, t = os.path.split(h)
 
     return file_module[:-1]
@@ -303,7 +292,7 @@ def process_function(name, c_name, b_obj, mod_path, f_skip, f_missing_doc, f_mis
 
     if inspect.isclass(b_obj):
         obj = getattr(b_obj, name)
-        obj_name = c_name + '.' + name
+        obj_name = f'{c_name}.{name}'
     else:
         obj = b_obj
         obj_name = name
@@ -317,7 +306,7 @@ def process_function(name, c_name, b_obj, mod_path, f_skip, f_missing_doc, f_mis
         if isinstance(doc, str):
             if not doc:
                 add_missing_doc = True
-            elif not '>>>' in doc:
+            elif '>>>' not in doc:
                 add_missing_doctest = True
             elif _is_indirect(name, doc):
                 add_indirect_doctest = True
@@ -349,8 +338,8 @@ def process_function(name, c_name, b_obj, mod_path, f_skip, f_missing_doc, f_mis
             f_missing_doctest.append(full_name)
         elif add_indirect_doctest:
             f_indirect_doctest.append(full_name)
-        if not in_sphinx:
-            sph.append(full_name)
+    if not in_sphinx:
+        sph.append(full_name)
 
     return f_doctest, function
 
@@ -384,7 +373,7 @@ def process_class(c_name, obj, c_skip, c_missing_doc, c_missing_doctest, c_indir
     if isinstance(doc, str):
         if not doc:
             c_missing_doc.append(full_name)
-        elif not '>>>' in doc:
+        elif '>>>' not in doc:
             c_missing_doctest.append(full_name)
         elif _is_indirect(c_name, doc):
             c_indirect_doctest.append(full_name)
@@ -402,10 +391,7 @@ def process_class(c_name, obj, c_skip, c_missing_doc, c_missing_doctest, c_indir
     else:
         raise TypeError('Current doc type of ', print(obj), ' is ', type(doc), '. Docstring must be a string, property , or none')
 
-    in_sphinx = False
-    if sphinx:
-        in_sphinx = find_sphinx(c_name, mod_path)
-
+    in_sphinx = find_sphinx(c_name, mod_path) if sphinx else False
     if not in_sphinx:
         sph.append(full_name)
 

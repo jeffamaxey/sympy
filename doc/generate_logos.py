@@ -9,6 +9,7 @@ Requirements:
     imagemagick     - for converting to *.ico favicon format
 """
 
+
 from argparse import ArgumentParser
 import xml.dom.minidom
 import os.path
@@ -22,17 +23,29 @@ default_output_dir = os.path.join(os.path.dirname(__file__), "_build", "logo")
 default_source_svg = "sympy.svg"
 
 # those are the options for resizing versions without tail or text
-svg_sizes = {}
-svg_sizes['notail'] = {
-    "prefix":"notail", "dx":-70, "dy":-20, "size":690,
-    "title":"SymPy Logo, with no tail"}
-svg_sizes['notail-notext'] = {
-    "prefix":"notailtext", "dx":-70, "dy":60, "size":690,
-    "title":"SymPy Logo, with no tail, no text"}
-svg_sizes['notext'] = {
-    "prefix":"notext", "dx":-7, "dy":90, "size":750,
-    "title":"SymPy Logo, with no text"}
-
+svg_sizes = {
+    'notail': {
+        "prefix": "notail",
+        "dx": -70,
+        "dy": -20,
+        "size": 690,
+        "title": "SymPy Logo, with no tail",
+    },
+    'notail-notext': {
+        "prefix": "notailtext",
+        "dx": -70,
+        "dy": 60,
+        "size": 690,
+        "title": "SymPy Logo, with no tail, no text",
+    },
+    'notext': {
+        "prefix": "notext",
+        "dx": -7,
+        "dy": 90,
+        "size": 750,
+        "title": "SymPy Logo, with no text",
+    },
+}
 # The list of identifiers of various versions
 versions = ['notail', 'notail-notext', 'notext']
 
@@ -153,29 +166,28 @@ def convert_to_png(fn_source, output_dir, sizes):
                          stderr=subprocess.STDOUT)
     p.communicate()
     if p.returncode == 127:
-        logging.error(
-            "%s: command not found. Install librsvg" % cmd)
+        logging.error(f"{cmd}: command not found. Install librsvg")
         sys.exit(p.returncode)
 
     for ver in svgs:
         if ver == '':
             fn_svg = fn_source
-            if system()[0:3].lower() == "win":
+            if system()[:3].lower() == "win":
                 os.chdir(default_source_dir)
         else:
             fn_svg = get_svg_filename_from_versionkey(fn_source, ver)
             fn_svg = os.path.join(output_dir, fn_svg)
-            if system()[0:3].lower() == "win":
+            if system()[:3].lower() == "win":
                 os.chdir(default_output_dir)
 
 
         basename = os.path.basename(fn_svg)
         name, ext = os.path.splitext(basename)
         for size in sizes:
-            if system()[0:3].lower() == "win":
+            if system()[:3].lower() == "win":
                 fn_out = "%s-%dpx.png" % (name, size)
                 fn_out = os.path.join(os.pardir, os.pardir, "_build", "logo", fn_out)
-                name_c = "%s.svg" % (name)
+                name_c = f"{name}.svg"
                 cmd = "rsvg-convert %s -f png -h %d -w %d > %s" % (name_c,
                                                                size, size,
                                                                fn_out)
@@ -191,12 +203,12 @@ def convert_to_png(fn_source, output_dir, sizes):
                                  stderr=subprocess.STDOUT)
             p.communicate()
             if p.returncode != 0:
-                logging.error("Return code is not 0: Command: %s" % cmd)
-                logging.error("return code: %s" % p.returncode)
+                logging.error(f"Return code is not 0: Command: {cmd}")
+                logging.error(f"return code: {p.returncode}")
                 sys.exit(p.returncode)
             else:
-                logging.debug("command: %s" % cmd)
-                logging.debug("return code: %s" % p.returncode)
+                logging.debug(f"command: {cmd}")
+                logging.debug(f"return code: {p.returncode}")
 
 
 def convert_to_ico(fn_source, output_dir, sizes):
@@ -207,19 +219,16 @@ def convert_to_ico(fn_source, output_dir, sizes):
     svgs = list(versions)
     svgs.insert(0, '')
 
-    if system()[0:3].lower() == "win":
-        cmd = "magick"
-    else:
-        cmd = "convert"
+    cmd = "magick" if system()[:3].lower() == "win" else "convert"
     p = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     p.communicate()
     if p.returncode == 127:
-        logging.error("%s: command not found. Install imagemagick" % cmd)
+        logging.error(f"{cmd}: command not found. Install imagemagick")
         sys.exit(p.returncode)
 
-    if system()[0:3].lower() == "win":
+    if system()[:3].lower() == "win":
         os.chdir(default_output_dir)
     for ver in svgs:
         if ver == '':
@@ -234,27 +243,27 @@ def convert_to_ico(fn_source, output_dir, sizes):
         pngs = []
         for size in sizes:
             fn_png= "%s-%dpx.png" % (name, size)
-            if system()[0:3].lower() != "win":
+            if system()[:3].lower() != "win":
                 fn_png = os.path.join(output_dir, fn_png)
             pngs.append(fn_png)
 
         # convert them to *.ico
-        fn_out = "%s-favicon.ico" % name
-        if system()[0:3].lower() != "win":
+        fn_out = f"{name}-favicon.ico"
+        if system()[:3].lower() != "win":
             fn_out = os.path.join(output_dir, fn_out)
 
-        cmd = "{} {} {}".format(cmd, " ".join(pngs), fn_out)
+        cmd = f'{cmd} {" ".join(pngs)} {fn_out}'
         p = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         p.communicate()
         if p.returncode != 0:
-            logging.error("Return code is not 0: Command: %s" % cmd)
-            logging.error("return code: %s" % p.returncode)
+            logging.error(f"Return code is not 0: Command: {cmd}")
+            logging.error(f"return code: {p.returncode}")
             sys.exit(p.returncode)
         else:
-            logging.debug("command: %s" % cmd)
-            logging.debug("return code: %s" % p.returncode)
+            logging.debug(f"command: {cmd}")
+            logging.debug(f"return code: {p.returncode}")
 
 
 def versionkey_to_boolean_tuple(ver):
@@ -271,8 +280,7 @@ def get_svg_filename_from_versionkey(fn_source, ver):
         return basename
     name, ext = os.path.splitext(basename)
     prefix = svg_sizes[ver]["prefix"]
-    fn_out = "{}-{}.svg".format(name, prefix)
-    return fn_out
+    return f"{name}-{prefix}.svg"
 
 def searchElementById(node, Id, tagname):
     """
@@ -287,13 +295,12 @@ def searchElementById(node, Id, tagname):
             return node
 
 def load_svg(fn):
-    doc = xml.dom.minidom.parse(fn)
-    return doc
+    return xml.dom.minidom.parse(fn)
 
 def save_svg(fn, doc):
     with open(fn, "wb") as f:
         xmlstr = doc.toxml("utf-8")
         f.write(xmlstr)
-        logging.info(" File saved: %s" % fn)
+        logging.info(f" File saved: {fn}")
 
 main()

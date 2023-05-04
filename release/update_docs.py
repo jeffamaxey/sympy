@@ -56,7 +56,7 @@ def update_docs(sympy_doc_git, doc_html_zip, version, dev_version, push):
 
         # Commit new docs
         run('git', 'add', 'latest')
-        run('git', 'commit', '-m', 'Add sympy %s docs' % version)
+        run('git', 'commit', '-m', f'Add sympy {version} docs')
 
         # Update versions.json
         with open(join(sympy_doc_git, 'versions.json'), 'w') as f:
@@ -108,7 +108,7 @@ def extract_docs(sympy_doc_git, doc_html_zip):
 
     with TemporaryDirectory() as tempdir:
         print()
-        print('Extracting docs to ' + tempdir)
+        print(f'Extracting docs to {tempdir}')
         print()
         ZipFile(doc_html_zip).extractall(tempdir)
 
